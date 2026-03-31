@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0A0A0A;
+  --bg-card: #111111;
+  --accent: #FF6B35;
+  --accent-hover: #E55A2B;
+  --text: #FAFAFA;
+  --text-muted: #A3A3A3;
+  --border: #262626;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Scrollbar sombre */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #404040;
+}
+
+/* Indicateurs de statut */
+.status-ok {
+  @apply bg-emerald-500/20 text-emerald-400 border-emerald-500/30;
+}
+
+.status-soon {
+  @apply bg-amber-500/20 text-amber-400 border-amber-500/30;
+}
+
+.status-urgent {
+  @apply bg-red-500/20 text-red-400 border-red-500/30;
+}
+
+/* Mobile only: keep date input compact like other fields */
+@media (max-width: 767px) {
+  .mobile-date-input {
+    height: 40px;
+    padding-right: 2.25rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    -webkit-appearance: none;
+    appearance: none;
+    text-align: left;
+  }
+
+  .mobile-date-input::-webkit-date-and-time-value {
+    text-align: left;
+  }
+}

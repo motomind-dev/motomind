@@ -1,0 +1,116 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/Button";
+import MaintenanceStatusDot from "@/components/MaintenanceStatusDot";
+import type { MaintenanceStatusItem } from "@/lib/maintenance-status";
+import { getStatusColor, getStatusLabel } from "@/lib/services/maintenance-status";
+
+export default function ProchainsEntretiensCard({
+  items,
+  onComplete,
+}: {
+  items: MaintenanceStatusItem[];
+  onComplete?: () => void;
+}) {
+  const [loading, setLoading] = useState<string | null>(null);
+
+  async function handleMarkComplete(item: MaintenanceStatusItem) {
+    const key = `${item.motoId}-${item.type}`;
+    setLoading(key);
+    try {
+      let res: Response;
+      if (item.entretienId) {
+        res = await fetch(`/api/entretiens/${item.entretienId}/complete`, {
+          method: "PUT",
+        });
+      } else {
+        res = await fetch("/api/entretiens/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ motoId: item.motoId, type: item.type }),
+        });
+      }
+      if (res.ok) {
+        onComplete?.();
+        if (typeof window !== "undefined") window.location.reload();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        console.error("Error completing maintenance:", err);
+      }
+    } catch (error) {
+      console.error("Error completing maintenance:", error);
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {items.length > 0 && (
+        <p className="text-zinc-500 text-sm">
+          {items.length} entretien{items.length !== 1 ? "s" : ""} à prévoir
+        </p>
+      )}
+      {items.length === 0 ? (
+        <p className="text-zinc-500 text-sm">Aucun entretien à venir</p>
+      ) : (
+        <ul className="space-y-4">
+          {items.map((item) => {
+            const key = `${item.motoId}-${item.type}`;
+            const isLoading = loading === key;
+            const dueText =
+              item.nextDueMileage != null
+                ? `${item.nextDueMileage.toLocaleString("fr-FR")} km`
+                : item.nextDueDate
+                  ? new Date(item.nextDueDate).toLocaleDateString("fr-FR")
+                  : "—";
+
+            return (
+              <li
+                key={key}
+                className="flex flex-col gap-4 py-6 border-b border-zinc-800 last:border-0 lg:flex-row lg:items-center lg:justify-between lg:gap-6"
+              >
+                <div className="flex items-start gap-4 min-w-0 flex-1">
+                  <MaintenanceStatusDot status={item.status} className="mt-1.5 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-zinc-300 text-sm font-medium">
+                      {item.typeLabel} — {item.motoName}
+                    </p>
+                    <p className="text-zinc-500 text-xs mt-0.5">
+                      Échéance : {dueText}
+                      {item.status === "SOON" && item.kmRemaining != null && item.kmRemaining > 0 && (
+                        <> · Dans {item.kmRemaining.toLocaleString("fr-FR")} km</>
+                      )}
+                      {item.status === "SOON" && item.daysRemaining != null && item.daysRemaining > 0 && (
+                        <> · Dans {item.daysRemaining} jours</>
+                      )}
+                      {item.status === "OVERDUE" && (
+                        <span className="text-red-400"> · En retard</span>
+                      )}
+                    </p>
+                    <span
+                      className={`inline-block mt-1 text-xs px-1.5 py-0.5 rounded ${getStatusColor(item.status)}`}
+                    >
+                      {getStatusLabel(item.status)}
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="flex-shrink-0 w-full lg:w-auto min-h-[44px]"
+                  disabled={isLoading}
+                  onClick={() => handleMarkComplete(item)}
+                >
+                  {isLoading ? "En cours..." : "Marquer comme effectué"}
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}

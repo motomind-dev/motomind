@@ -1,0 +1,182 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  password           String
+  name               String?
+  image              String?
+  emailVerified      Boolean   @default(false)
+  verificationToken  String?
+  plan               String    @default("FREE") // "FREE" | "PRO"
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  motos           Moto[]
+  accounts        Account[]
+  sessions        Session[]
+  problemReports  ProblemReport[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+}
+
+model Moto {
+  id          String    @id @default(cuid())
+  userId      String
+  marque      String
+  modele      String
+  annee       Int
+  kilometrage Int       @default(0)
+  photo       String?
+  dateAchat   DateTime?
+  shareToken  String?   @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  purgeAt     DateTime?
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entretiens  Entretien[]
+}
+
+model Entretien {
+  id                    String    @id @default(cuid())
+  motoId                String
+  type                  String    // vidange, chaine, pneus, freins, revision_generale
+  date                  DateTime
+  kilometrage           Int
+  note                  String?
+  cout                  Float?
+  statut                String    @default("A_VENIR") // A_VENIR, proche, en_retard, termine
+  garage                String?
+  reminderSent          Boolean   @default(false)
+  nextDueMileage        Int?
+  nextDueDate           DateTime?
+  reminderMileageBefore  Int       @default(500)
+  reminderDaysBefore    Int       @default(30)
+  invoiceUrl            String?
+  invoiceType           String?   // "image" | "pdf"
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+  purgeAt               DateTime?
+
+  moto    Moto     @relation(fields: [motoId], references: [id], onDelete: Cascade)
+  rappels Rappel[]
+
+  intervalleKm    Int?
+  intervalleJours Int?
+}
+
+model Rappel {
+  id          String   @id @default(cuid())
+  entretienId String
+  type        String   // distance, date
+  dateEnvoi   DateTime
+  envoye      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  entretien Entretien @relation(fields: [entretienId], references: [id], onDelete: Cascade)
+
+  @@index([dateEnvoi, envoye])
+}
+
+// ----- Sécurité -----
+// Types: FAILED_LOGIN_ATTEMPT, NEW_DEVICE_LOGIN, NEW_IP_LOGIN, MULTIPLE_FAILED_LOGINS,
+//        MULTIPLE_RESET_REQUESTS, PASSWORD_CHANGED, LOGIN_AFTER_PASSWORD_RESET
+// Sévérité: LOW, MEDIUM, HIGH
+
+model SecurityEvent {
+  id          String   @id @default(cuid())
+  userId      String?
+  email       String?
+  type        String   // SecurityEventType
+  severity    String   @default("MEDIUM") // SecuritySeverity
+  ipAddress   String?
+  userAgent   String?
+  fingerprint String?
+  metadata    String?
+  createdAt   DateTime          @default(now())
+  notifiedAt  DateTime?
+  resolvedAt  DateTime?
+
+  @@index([userId, type, createdAt])
+  @@index([email, type, createdAt])
+}
+
+model KnownDevice {
+  id          String   @id @default(cuid())
+  userId      String
+  fingerprint String
+  userAgent   String?
+  ipAddress   String?
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, fingerprint])
+  @@index([userId])
+}
+
+model ProblemReport {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String?
+  message   String
+  type      String?  // bug, suggestion, autre
+  page      String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
