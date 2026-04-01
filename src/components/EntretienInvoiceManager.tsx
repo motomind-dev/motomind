@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 type Plan = "FREE" | "PRO";
 
@@ -157,9 +158,11 @@ export default function EntretienInvoiceManager({
         <div className="flex items-start gap-3">
           {isImage ? (
             <div className="w-14 h-14 rounded border border-zinc-600 overflow-hidden bg-zinc-900/40 flex-shrink-0">
-              <img
+              <Image
                 src={invoiceUrl ?? ""}
                 alt="Facture"
+                width={56}
+                height={56}
                 className="w-full h-full object-cover"
               />
             </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -451,9 +452,11 @@ export default function AjouterEntretienPage() {
                               rel="noopener noreferrer"
                               className="block w-20 h-20 rounded border border-zinc-600 overflow-hidden"
                             >
-                              <img
+                              <Image
                                 src={e.invoiceUrl}
                                 alt="Facture"
+                                width={80}
+                                height={80}
                                 className="w-full h-full object-cover"
                               />
                             </a>

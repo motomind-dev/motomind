@@ -3,7 +3,7 @@
  */
 
 export const activeOnly = {
-  deletedAt: null as const,
+  deletedAt: null,
 };
 
 export const whereMotoActive = (userId: string) => ({

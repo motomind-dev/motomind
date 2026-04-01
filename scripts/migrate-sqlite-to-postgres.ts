@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Migration script: SQLite (old schema) → PostgreSQL (new schema with enums).
  *

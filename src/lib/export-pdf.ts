@@ -41,7 +41,7 @@ export async function exportMaintenanceToPdf(
       groupedByMoto.get(motoId)!.push(e);
     }
 
-    for (const [_motoId, list] of groupedByMoto) {
+    for (const [_motoId, list] of Array.from(groupedByMoto.entries())) {
       const first = list[0];
       const motoInfo = first?.moto;
 

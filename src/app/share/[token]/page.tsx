@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { formatEntretienType } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 
@@ -79,7 +80,7 @@ export default async function SharePage({
             <p className="text-zinc-500">Aucun entretien enregistré.</p>
           ) : (
             <div className="space-y-3">
-              {entretiens.map((e: { id: string; type: string; date: string; kilometrage: number; note: string | null; garage: string | null; invoiceUrl: string | null; invoiceType: string | null }) => (
+              {entretiens.map((e) => (
                 <div
                   key={e.id}
                   className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"
@@ -108,9 +109,11 @@ export default async function SharePage({
                           rel="noopener noreferrer"
                           className="block w-24 h-24 rounded border border-zinc-600 overflow-hidden"
                         >
-                          <img
+                          <Image
                             src={e.invoiceUrl}
                             alt="Facture"
+                            width={96}
+                            height={96}
                             className="w-full h-full object-cover"
                           />
                         </a>

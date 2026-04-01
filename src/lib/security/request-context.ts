@@ -58,7 +58,7 @@ function simpleHash(s: string): string {
  * Génère un fingerprint simple à partir de user-agent + IP.
  * Évite les dépendances lourdes, suffisant pour détecter les changements.
  */
-export function getSimpleFingerprint(req: Request): string {
+export function getSimpleFingerprint(req: Request | RequestLike): string {
   const ua = getUserAgent(req);
   const ip = getClientIp(req);
   return simpleHash(`${ua}|${ip}`);

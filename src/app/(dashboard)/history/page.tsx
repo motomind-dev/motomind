@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { formatEntretienType } from "@/lib/utils";
 import {
   getEntretienStatus,
@@ -412,7 +413,13 @@ export default function HistoryPage() {
                             rel="noopener noreferrer"
                             className="block w-16 h-16 rounded border border-zinc-600 overflow-hidden"
                           >
-                            <img src={e.invoiceUrl} alt="Facture" className="w-full h-full object-cover" />
+                            <Image
+                              src={e.invoiceUrl}
+                              alt="Facture"
+                              width={64}
+                              height={64}
+                              className="w-full h-full object-cover"
+                            />
                           </a>
                         ) : (
                           <a
