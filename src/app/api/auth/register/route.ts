@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validators/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sendVerificationEmail } from "@/lib/email";
+import { getAppBaseUrl } from "@/lib/app-url";
+
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
@@ -42,7 +45,7 @@ export async function POST(req: Request) {
     const hashedPassword = await hash(password, 12);
     const verificationToken = randomUUID();
 
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3002";
+    const baseUrl = getAppBaseUrl();
     const verificationLink = `${baseUrl}/verify-email?token=${verificationToken}`;
 
     const user = await prisma.user.create({
@@ -84,7 +87,9 @@ export async function POST(req: Request) {
       );
     }
     if (error instanceof Error) {
-      console.error("Register error:", error.message);
+      console.error("Register error:", error.message, (error as { code?: string }).code);
+    } else {
+      console.error("Register error:", error);
     }
     return NextResponse.json(
       { error: "Une erreur est survenue lors de la création du compte. Réessayez." },

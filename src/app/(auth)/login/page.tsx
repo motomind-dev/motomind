@@ -22,6 +22,12 @@ function loginErrorFeedback(code: string | null): {
       text: "Email ou mot de passe incorrect.",
     };
   }
+  if (code === "Configuration") {
+    return {
+      variant: "error",
+      text: "Problème de configuration serveur (NEXTAUTH_SECRET ou base de données). Vérifie les variables sur Vercel.",
+    };
+  }
   return {
     variant: "error",
     text: "Une erreur est survenue. Réessayez.",
@@ -53,6 +59,7 @@ function LoginPageContent() {
       email,
       password,
       redirect: false,
+      callbackUrl: `${typeof window !== "undefined" ? window.location.origin : ""}/dashboard`,
     });
 
     if (res?.error) {

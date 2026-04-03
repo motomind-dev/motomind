@@ -3,6 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
+import { getAppBaseUrl } from "@/lib/app-url";
+
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -45,7 +48,7 @@ export async function POST(req: Request) {
   }
 
   if (moto.shareToken) {
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3002";
+    const baseUrl = getAppBaseUrl();
     const shareUrl = `${baseUrl}/share/${moto.shareToken}`;
     return NextResponse.json({ token: moto.shareToken, shareUrl });
   }
@@ -56,7 +59,7 @@ export async function POST(req: Request) {
     data: { shareToken: token },
   });
 
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3002";
+  const baseUrl = getAppBaseUrl();
   const shareUrl = `${baseUrl}/share/${token}`;
 
   return NextResponse.json({ token, shareUrl });

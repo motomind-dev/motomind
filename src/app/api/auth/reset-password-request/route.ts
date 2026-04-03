@@ -5,8 +5,11 @@ import { resetPasswordRequestSchema } from "@/lib/validators/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { onResetPasswordRequest } from "@/lib/security/detect-suspicious-activity";
 import crypto from "crypto";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 const TOKEN_EXPIRY_HOURS = 1;
+
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
@@ -60,7 +63,7 @@ export async function POST(req: Request) {
     data: { email, token, expires },
   });
 
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3002";
+  const baseUrl = getAppBaseUrl();
   const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
   const result = await sendPasswordResetEmail(email, resetLink);

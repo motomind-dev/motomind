@@ -9,7 +9,7 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
-    "db:reset": "rm -f prisma/dev.db && prisma db push",
+    "db:reset": "prisma db push --force-reset",
     "db:studio": "prisma studio"
   },
   "dependencies": {

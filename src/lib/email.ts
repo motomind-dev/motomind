@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { formatEntretienType } from "./utils";
+import { getAppBaseUrl } from "./app-url";
 
 let resend: Resend | null = null;
 if (process.env.RESEND_API_KEY) {
@@ -163,7 +164,7 @@ export async function sendWelcomeEmail(
     return { success: false, error: "RESEND_API_KEY non configuré" };
   }
 
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3002";
+  const baseUrl = getAppBaseUrl();
   const loginUrl = `${baseUrl}/login`;
   const greeting = userName ? `Salut ${userName} 👋` : "Salut rider 👋";
 
