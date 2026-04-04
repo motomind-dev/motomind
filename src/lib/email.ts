@@ -35,7 +35,13 @@ const T = {
   textMuted: "#A3A3A3",
   textDim: "#737373",
   textFaint: "#525252",
+  /** Accent texte (logo) — inchangé par rapport au site. */
   accent: "#FF6B35",
+  /**
+   * Fond des boutons CTA : Gmail / Mail Android tirent souvent #FF6B35 vers le rouge
+   * quand seul le &lt;a&gt; a un background. #F97316 + td bgcolor stabilise l’aperçu.
+   */
+  accentCta: "#F97316",
   footer: "#888888",
 } as const;
 
@@ -53,7 +59,7 @@ const EMAIL_HEAD = `<head>
 function emailLogoRow(): string {
   return `<tr>
     <td bgcolor="${T.card}" style="padding:28px 24px;text-align:center;border-bottom:1px solid ${T.border};background-color:${T.card};">
-      <span style="font-size:24px;font-weight:bold;color:${T.text};">Moto</span><span style="font-size:24px;font-weight:bold;color:${T.accent};">Mind</span>
+      <span style="font-size:24px;font-weight:bold;color:${T.text};">Moto</span><span style="font-size:24px;font-weight:bold;color:${T.accentCta};">Mind</span>
     </td>
   </tr>`;
 }
@@ -95,10 +101,19 @@ ${EMAIL_HEAD}
 }
 
 function emailButton(href: string, label: string): string {
+  const c = T.accentCta;
   return `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" bgcolor="${T.card}" style="background-color:${T.card};">
     <tr>
-      <td align="center" bgcolor="${T.card}" style="background-color:${T.card};padding:0;">
-        <a href="${href}" style="display:inline-block;padding:14px 28px;background-color:${T.accent};color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;border-radius:12px;">${label}</a>
+      <td align="center" bgcolor="${T.card}" style="background-color:${T.card};padding:8px 0;">
+        <table cellpadding="0" cellspacing="0" border="0" role="presentation" align="center">
+          <tr>
+            <td align="center" bgcolor="${c}" style="background-color:${c};border-radius:12px;mso-padding-alt:14px 28px;">
+              <a href="${href}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;line-height:1.25;color:#ffffff;text-decoration:none;border-radius:12px;background-color:${c};">
+                ${label}
+              </a>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
   </table>`;
