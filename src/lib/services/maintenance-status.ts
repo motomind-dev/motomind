@@ -106,12 +106,12 @@ const STATUS_COLORS: Record<MaintenanceDisplayStatus, string> = {
 const STATUS_DOT_COLORS: Record<string, string> = {
   UPCOMING: "bg-green-500",
   OK: "bg-green-500",
-  SOON: "bg-orange-400",
+  SOON: "bg-green-500",
   OVERDUE: "bg-red-500",
   COMPLETED: "bg-blue-500",
   termine: "bg-blue-500",
   A_VENIR: "bg-green-500",
-  proche: "bg-orange-400",
+  proche: "bg-green-500",
   en_retard: "bg-red-500",
 };
 
