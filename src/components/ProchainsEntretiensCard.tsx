@@ -85,9 +85,6 @@ export default function ProchainsEntretiensCard({
                       {item.status === "SOON" && item.daysRemaining != null && item.daysRemaining > 0 && (
                         <> · Dans {item.daysRemaining} jours</>
                       )}
-                      {item.status === "OVERDUE" && (
-                        <span className="text-red-400"> · En retard</span>
-                      )}
                     </p>
                     <span
                       className={`inline-block mt-1 text-xs px-1.5 py-0.5 rounded ${getStatusColor(item.status)}`}
