@@ -35,9 +35,12 @@ export async function GET(req: Request) {
       },
     });
 
-    sendWelcomeEmail(user.email, user.name).catch((err) =>
-      console.error("[verify-email] Welcome email error:", err)
-    );
+    // Attendre l’envoi : en serverless (ex. Vercel), une promesse non attendue
+    // est souvent coupée dès que la réponse HTTP est renvoyée.
+    const welcomeResult = await sendWelcomeEmail(user.email, user.name);
+    if (!welcomeResult.success) {
+      console.error("[verify-email] Welcome email failed:", welcomeResult.error);
+    }
 
     return NextResponse.json({
       success: true,
