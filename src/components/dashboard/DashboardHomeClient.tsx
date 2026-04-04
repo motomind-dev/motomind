@@ -17,9 +17,8 @@ import {
 } from "@/lib/maintenance-status";
 import {
   getEntretienStatus,
-  getStatusColor,
-  getStatusLabel,
   getStatusDotColor,
+  getStatusLabel,
 } from "@/lib/services/maintenance-status";
 
 type HomePayload = {
@@ -202,12 +201,14 @@ export default function DashboardHomeClient() {
                           </p>
                         </div>
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${getStatusColor(displayStatus)}`}
+                          className="inline-flex items-center justify-center flex-shrink-0 p-1"
+                          title={getStatusLabel(displayStatus)}
+                          aria-label={getStatusLabel(displayStatus)}
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getStatusDotColor(displayStatus)}`}
+                            className={`w-2 h-2 rounded-full ${getStatusDotColor(displayStatus)}`}
+                            aria-hidden
                           />
-                          {getStatusLabel(displayStatus)}
                         </span>
                       </li>
                     );
