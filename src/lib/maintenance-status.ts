@@ -65,27 +65,25 @@ export function computeMaintenanceStatusItems(
         .sort((a, b) => b.kilometrage - a.kilometrage);
       const dernier = derniers[0];
 
+      // Sans au moins un entretien terminé pour ce type, on n’invente pas d’échéance
+      // (évite les 5 lignes « à venir » fantômes sur une moto neuve dans le carnet).
+      if (!dernier) {
+        continue;
+      }
+
       const intervalleKm =
-        dernier?.intervalleKm ?? INTERVALLES_KM[type] ?? 5000;
-      const intervalleJours = dernier?.intervalleJours ?? 365;
+        dernier.intervalleKm ?? INTERVALLES_KM[type] ?? 5000;
+      const intervalleJours = dernier.intervalleJours ?? 365;
 
-      const nextDueMileage = dernier
-        ? dernier.kilometrage + intervalleKm
-        : moto.kilometrage + intervalleKm;
-      const nextDueDate = dernier
-        ? (() => {
-            const d = new Date(dernier.date);
-            d.setDate(d.getDate() + intervalleJours);
-            return d;
-          })()
-        : (() => {
-            const d = new Date();
-            d.setDate(d.getDate() + intervalleJours);
-            return d;
-          })();
+      const nextDueMileage = dernier.kilometrage + intervalleKm;
+      const nextDueDate = (() => {
+        const d = new Date(dernier.date);
+        d.setDate(d.getDate() + intervalleJours);
+        return d;
+      })();
 
-      const reminderMileageBefore = dernier?.reminderMileageBefore ?? 500;
-      const reminderDaysBefore = dernier?.reminderDaysBefore ?? 30;
+      const reminderMileageBefore = dernier.reminderMileageBefore ?? 500;
+      const reminderDaysBefore = dernier.reminderDaysBefore ?? 30;
 
       const status = computeMaintenanceDisplayStatus({
         isCompleted: false,

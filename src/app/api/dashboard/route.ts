@@ -42,8 +42,11 @@ export async function GET() {
 
     for (const t of types) {
       const dernier = motoPrincipale.entretiens.find((e) => e.type === t);
+      if (!dernier) {
+        continue;
+      }
       const intervalle = INTERVALLES_KM[t];
-      const kmProchain = dernier ? dernier.kilometrage + intervalle : km + intervalle;
+      const kmProchain = dernier.kilometrage + intervalle;
 
       if (kmProchain > km && (!prochainKm || kmProchain < prochainKm)) {
         prochainKm = kmProchain;
