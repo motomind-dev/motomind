@@ -27,8 +27,8 @@ function toMidnight(d: Date) {
  * Status rules centralisées (cohérentes partout) :
  * 1. Si effectué → "Terminé" (COMPLETED)
  * 2. Sinon si la date prévue est passée → "En retard" (OVERDUE)
- * 3. Sinon si la date prévue est aujourd'hui → "À faire" (SOON)
- * 4. Sinon → "À venir" (UPCOMING)
+ * 3. Sinon si la date prévue est aujourd'hui → SOON (affiché comme « À venir », vert)
+ * 4. Sinon → UPCOMING (« À venir »)
  *
  * Note : si la date prévue manque, on retombe sur la logique kilométrage.
  */
@@ -97,7 +97,7 @@ export function computeMaintenanceDisplayStatus(
 
 const STATUS_COLORS: Record<MaintenanceDisplayStatus, string> = {
   UPCOMING: "text-green-400 bg-green-500/10",
-  SOON: "text-orange-400 bg-orange-500/10",
+  SOON: "text-green-400 bg-green-500/10",
   OVERDUE: "text-red-400 bg-red-500/10",
   COMPLETED: "text-blue-400 bg-blue-500/10",
 };
@@ -117,7 +117,7 @@ const STATUS_DOT_COLORS: Record<string, string> = {
 
 const STATUS_LABELS_FR: Record<MaintenanceDisplayStatus, string> = {
   UPCOMING: "À venir",
-  SOON: "À faire",
+  SOON: "À venir",
   OVERDUE: "En retard",
   COMPLETED: "Terminé",
 };
@@ -126,12 +126,12 @@ const STATUS_LABELS_FR: Record<MaintenanceDisplayStatus, string> = {
 const STATUS_LABELS_LEGACY: Record<string, string> = {
   OK: "À venir",
   UPCOMING: "À venir",
-  SOON: "À faire",
+  SOON: "À venir",
   OVERDUE: "En retard",
   COMPLETED: "Terminé",
   termine: "Terminé",
   A_VENIR: "À venir",
-  proche: "À faire",
+  proche: "À venir",
   en_retard: "En retard",
 };
 
@@ -139,7 +139,7 @@ const STATUS_LABELS_LEGACY: Record<string, string> = {
 const DB_STATUT_COLORS: Record<string, string> = {
   termine: "text-blue-400 bg-blue-500/10",
   en_retard: "text-red-400 bg-red-500/10",
-  proche: "text-orange-400 bg-orange-500/10",
+  proche: "text-green-400 bg-green-500/10",
   A_VENIR: "text-green-400 bg-green-500/10",
 };
 

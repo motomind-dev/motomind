@@ -115,7 +115,7 @@ export function formatEntretienType(type: string): string {
 export function formatStatut(statut: string): string {
   const labels: Record<string, string> = {
     A_VENIR: "À venir",
-    proche: "Proche",
+    proche: "À venir",
     en_retard: "En retard",
     termine: "Terminé",
   };

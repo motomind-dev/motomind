@@ -18,11 +18,11 @@ const TYPE_LABELS: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   A_VENIR: "À venir",
-  proche: "Proche",
+  proche: "À venir",
   en_retard: "En retard",
   termine: "Terminé",
   UPCOMING: "À venir",
-  SOON: "Proche",
+  SOON: "À venir",
   OVERDUE: "En retard",
   COMPLETED: "Terminé",
 };
@@ -37,7 +37,7 @@ export const DISPLAY_STATUS_LABELS: Record<string, string> = {
 /** Tailwind class for status dot */
 export const DISPLAY_STATUS_COLORS: Record<string, string> = {
   OK: "bg-green-500",
-  SOON: "bg-orange-400",
+  SOON: "bg-green-500",
   OVERDUE: "bg-red-500",
 };
 
