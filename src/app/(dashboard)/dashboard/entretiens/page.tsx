@@ -43,13 +43,18 @@ export default function EntretiensPage() {
   }, [entretiens, filter]);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/entretiens").then((r) => r.json()),
-      fetch("/api/account/plan").then((r) => r.json()).catch(() => ({ plan: "FREE" })),
-    ]).then(([data, planData]) => {
-      setEntretiens(data);
-      setPlan(planData?.plan === "PRO" ? "PRO" : "FREE");
-    }).finally(() => setLoading(false));
+    fetch("/api/entretiens?withAccount=1")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.entretiens) {
+          setEntretiens(data.entretiens);
+          setPlan(data.plan === "PRO" ? "PRO" : "FREE");
+        } else {
+          setEntretiens(Array.isArray(data) ? data : []);
+        }
+      })
+      .catch(() => setEntretiens([]))
+      .finally(() => setLoading(false));
   }, []);
 
   async function handleDelete(id: string) {

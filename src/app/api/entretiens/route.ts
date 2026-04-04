@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { INTERVALLES_KM } from "@/lib/utils";
 import { whereEntretienActive } from "@/lib/prisma-filters";
 
+export const runtime = "nodejs";
+
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -13,14 +15,33 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const motoId = searchParams.get("motoId");
+  const withAccount = searchParams.get("withAccount") === "1";
 
   const baseWhere = whereEntretienActive(session.user.id);
   const where = motoId ? { ...baseWhere, motoId } : baseWhere;
 
+  const orderBy = [{ date: "desc" as const }, { kilometrage: "desc" as const }];
+
+  if (withAccount) {
+    const [entretiens, user] = await Promise.all([
+      prisma.entretien.findMany({
+        where,
+        include: { moto: true },
+        orderBy,
+      }),
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { plan: true },
+      }),
+    ]);
+    const plan = user?.plan === "PRO" ? "PRO" : "FREE";
+    return NextResponse.json({ entretiens, plan });
+  }
+
   const entretiens = await prisma.entretien.findMany({
     where,
     include: { moto: true },
-    orderBy: [{ date: "desc" }, { kilometrage: "desc" }],
+    orderBy,
   });
 
   return NextResponse.json(entretiens);

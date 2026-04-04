@@ -83,13 +83,18 @@ export default function HistoryPage() {
   const [selectedEntretienIds, setSelectedEntretienIds] = useState<string[]>([]);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/entretiens").then((r) => r.json()),
-      fetch("/api/account/plan").then((r) => r.json()),
-    ]).then(([entretiensData, planData]) => {
-      setEntretiens(entretiensData);
-      setPlan(planData.plan === "PRO" ? "PRO" : "FREE");
-    }).finally(() => setLoading(false));
+    fetch("/api/entretiens?withAccount=1")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.entretiens) {
+          setEntretiens(data.entretiens);
+          setPlan(data.plan === "PRO" ? "PRO" : "FREE");
+        } else {
+          setEntretiens(Array.isArray(data) ? data : []);
+        }
+      })
+      .catch(() => setEntretiens([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const entretiensTermines = useMemo(

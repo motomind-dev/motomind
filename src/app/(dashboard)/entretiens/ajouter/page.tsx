@@ -61,21 +61,24 @@ export default function AjouterEntretienPage() {
     setLoading(true);
     setError(null);
     try {
-      const [motosRes, entretiensRes, planRes] = await Promise.all([
-        fetch("/api/motos"),
-        fetch("/api/entretiens"),
-        fetch("/api/account/plan"),
+      const [motosRes, entretiensRes] = await Promise.all([
+        fetch("/api/motos?withAccount=1"),
+        fetch("/api/entretiens?withAccount=1"),
       ]);
 
-      const motosJson = motosRes.ok ? await motosRes.json() : [];
-      const entretiensJson = entretiensRes.ok ? await entretiensRes.json() : [];
-      const planData = planRes.ok ? await planRes.json() : { plan: "FREE" };
+      const motosJson = motosRes.ok ? await motosRes.json() : {};
+      const entretiensJson = entretiensRes.ok ? await entretiensRes.json() : {};
 
-      setMotos(Array.isArray(motosJson) ? motosJson : []);
-      setEntretiens(Array.isArray(entretiensJson) ? entretiensJson : []);
-      setPlan(planData.plan === "PRO" ? "PRO" : "FREE");
-      if (!motoId && Array.isArray(motosJson) && motosJson.length > 0) {
-        setMotoId(motosJson[0].id);
+      const motosList = motosJson?.motos ?? (Array.isArray(motosJson) ? motosJson : []);
+      const entretiensList =
+        entretiensJson?.entretiens ?? (Array.isArray(entretiensJson) ? entretiensJson : []);
+      const planRaw = motosJson?.plan ?? entretiensJson?.plan ?? "FREE";
+
+      setMotos(motosList);
+      setEntretiens(entretiensList);
+      setPlan(planRaw === "PRO" ? "PRO" : "FREE");
+      if (!motoId && motosList.length > 0) {
+        setMotoId(motosList[0].id);
       }
     } catch {
       setError("Impossible de charger vos motos / entretiens.");

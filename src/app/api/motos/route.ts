@@ -5,18 +5,46 @@ import { prisma } from "@/lib/prisma";
 import { createMotorcycleBodySchema } from "@/lib/validators/motorcycle";
 import { whereMotoActive } from "@/lib/prisma-filters";
 
-export async function GET() {
+export const runtime = "nodejs";
+
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
-  const motos = await prisma.moto.findMany({
-    where: whereMotoActive(session.user.id),
-    orderBy: { createdAt: "desc" },
-  });
+  const userId = session.user.id;
+  const withAccount = new URL(req.url).searchParams.get("withAccount") === "1";
 
-  return NextResponse.json(motos);
+  if (!withAccount) {
+    const motos = await prisma.moto.findMany({
+      where: whereMotoActive(userId),
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(motos);
+  }
+
+  const [motos, user] = await Promise.all([
+    prisma.moto.findMany({
+      where: whereMotoActive(userId),
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        plan: true,
+        _count: {
+          select: { motos: { where: { deletedAt: null } } },
+        },
+      },
+    }),
+  ]);
+
+  const plan = user?.plan === "PRO" ? "PRO" : "FREE";
+  const motoCount = user?._count.motos ?? 0;
+  const canAddMoto = plan === "PRO" || motoCount < 1;
+
+  return NextResponse.json({ motos, plan, canAddMoto });
 }
 
 export async function POST(req: Request) {

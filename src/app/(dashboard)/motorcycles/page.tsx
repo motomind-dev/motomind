@@ -26,14 +26,21 @@ export default function MotosPage() {
   const [shareLoading, setShareLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/motos").then((r) => r.json()),
-      fetch("/api/account/plan").then((r) => r.json()).catch(() => ({ canAddMoto: true, plan: "FREE" })),
-    ]).then(([motosData, planData]) => {
-      setMotos(Array.isArray(motosData) ? motosData : []);
-      setCanAddMoto(planData?.canAddMoto !== false);
-      setPlan(planData?.plan === "PRO" ? "PRO" : "FREE");
-    }).finally(() => setLoading(false));
+    fetch("/api/motos?withAccount=1")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.motos) {
+          setMotos(data.motos);
+          setCanAddMoto(data.canAddMoto !== false);
+          setPlan(data.plan === "PRO" ? "PRO" : "FREE");
+        } else {
+          setMotos(Array.isArray(data) ? data : []);
+        }
+      })
+      .catch(() => {
+        setMotos([]);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   async function handleShare(m: Moto) {
