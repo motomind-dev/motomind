@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR, { mutate as globalMutate } from "swr";
 import Link from "next/link";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import TrashIcon from "@/components/TrashIcon";
 import { Button } from "@/components/ui/Button";
 import PremiumPaywall from "@/components/PremiumPaywall";
+import { jsonFetcher } from "@/lib/fetcher";
+import { SWR_KEYS } from "@/lib/dashboard-swr";
 
 type Moto = {
   id: string;
@@ -17,31 +20,28 @@ type Moto = {
   shareToken?: string | null;
 };
 
+type MotosPayload = {
+  motos: Moto[];
+  plan: string;
+  canAddMoto: boolean;
+};
+
+const swrOpts = { dedupingInterval: 60_000, revalidateOnFocus: false };
+
 export default function MotosPage() {
-  const [motos, setMotos] = useState<Moto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [canAddMoto, setCanAddMoto] = useState(true);
+  const { data, isLoading, error, mutate } = useSWR<MotosPayload>(
+    SWR_KEYS.motosPlan,
+    jsonFetcher,
+    swrOpts
+  );
+
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [plan, setPlan] = useState<"FREE" | "PRO">("FREE");
   const [shareLoading, setShareLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch("/api/motos?withAccount=1")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.motos) {
-          setMotos(data.motos);
-          setCanAddMoto(data.canAddMoto !== false);
-          setPlan(data.plan === "PRO" ? "PRO" : "FREE");
-        } else {
-          setMotos(Array.isArray(data) ? data : []);
-        }
-      })
-      .catch(() => {
-        setMotos([]);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const motos = data?.motos ?? [];
+  const plan = data?.plan === "PRO" ? "PRO" : "FREE";
+  const canAddMoto = data?.canAddMoto !== false;
+  const loading = isLoading && !data;
 
   async function handleShare(m: Moto) {
     if (plan !== "PRO") return;
@@ -55,8 +55,17 @@ export default function MotosPage() {
       });
       if (res.ok) {
         const { token } = await res.json();
-        setMotos((prev) =>
-          prev.map((x) => (x.id === m.id ? { ...x, shareToken: token } : x))
+        void mutate(
+          (prev) =>
+            prev
+              ? {
+                  ...prev,
+                  motos: prev.motos.map((x) =>
+                    x.id === m.id ? { ...x, shareToken: token } : x
+                  ),
+                }
+              : prev,
+          { revalidate: false }
         );
       }
     } finally {
@@ -72,8 +81,17 @@ export default function MotosPage() {
       body: JSON.stringify({ motoId }),
     });
     if (res.ok) {
-      setMotos((prev) =>
-        prev.map((x) => (x.id === motoId ? { ...x, shareToken: null } : x))
+      void mutate(
+        (prev) =>
+          prev
+            ? {
+                ...prev,
+                motos: prev.motos.map((x) =>
+                  x.id === motoId ? { ...x, shareToken: null } : x
+                ),
+              }
+            : prev,
+        { revalidate: false }
       );
     }
   }
@@ -82,10 +100,27 @@ export default function MotosPage() {
     const res = await fetch(`/api/motos/${id}`, { method: "DELETE" });
     if (res.ok) {
       const next = motos.filter((m) => m.id !== id);
-      setMotos(next);
+      const nextCanAdd = data?.plan === "PRO" || next.length < 1;
+      void mutate(
+        (prev) =>
+          prev
+            ? { ...prev, motos: next, canAddMoto: nextCanAdd }
+            : prev,
+        { revalidate: false }
+      );
+      void globalMutate(SWR_KEYS.home);
+      void globalMutate(SWR_KEYS.entretiensPlan);
       setDeleteTarget(null);
-      if (next.length === 0) setCanAddMoto(true);
     }
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-white">Mes motos</h1>
+        <p className="text-red-400 text-sm">Impossible de charger la liste. Réessaie plus tard.</p>
+      </div>
+    );
   }
 
   return (
@@ -99,7 +134,13 @@ export default function MotosPage() {
       </div>
 
       {loading ? (
-        <p className="text-zinc-500">Chargement...</p>
+        <div className="animate-pulse space-y-3" aria-busy="true">
+          <div className="h-10 w-full max-w-md bg-zinc-800 rounded-lg" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="h-40 rounded-xl bg-zinc-900 border border-zinc-800" />
+            <div className="h-40 rounded-xl bg-zinc-900 border border-zinc-800 hidden sm:block" />
+          </div>
+        </div>
       ) : motos.length === 0 ? (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 md:p-8 text-center">
           <p className="text-zinc-500 mb-4">Aucune moto enregistrée.</p>

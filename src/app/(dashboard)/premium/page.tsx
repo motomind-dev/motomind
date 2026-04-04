@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { getCachedSession } from "@/lib/get-session";
 
 export default async function PremiumPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getCachedSession();
   if (!session?.user?.id) redirect("/login");
 
   return (

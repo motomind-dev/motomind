@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR, { mutate as globalMutate } from "swr";
 import { formatEntretienType } from "@/lib/utils";
+import { jsonFetcher } from "@/lib/fetcher";
+import { SWR_KEYS } from "@/lib/dashboard-swr";
 
 type TrashMoto = {
   id: string;
@@ -30,29 +33,38 @@ type TrashData = {
   entretiens: TrashEntretien[];
 };
 
+const swrOpts = { dedupingInterval: 60_000, revalidateOnFocus: false };
+
+function invalidateAfterTrashChange() {
+  void globalMutate(SWR_KEYS.trash);
+  void globalMutate(SWR_KEYS.home);
+  void globalMutate(SWR_KEYS.motosPlan);
+  void globalMutate(SWR_KEYS.entretiensPlan);
+}
+
 export default function TrashPage() {
-  const [data, setData] = useState<TrashData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, error, mutate } = useSWR<TrashData>(
+    SWR_KEYS.trash,
+    jsonFetcher,
+    swrOpts
+  );
+
   const [restoring, setRestoring] = useState<string | null>(null);
   const [forceDeleting, setForceDeleting] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch("/api/trash")
-      .then((r) => r.json())
-      .then(setData)
-      .finally(() => setLoading(false));
-  }, []);
+  const loading = isLoading && !data;
 
   async function handleRestoreMoto(id: string) {
     setRestoring(id);
     try {
       const res = await fetch(`/api/motos/${id}/restore`, { method: "POST" });
       if (res.ok) {
-        setData((prev) =>
-          prev
-            ? { ...prev, motos: prev.motos.filter((m) => m.id !== id) }
-            : prev
+        void mutate(
+          (prev) =>
+            prev ? { ...prev, motos: prev.motos.filter((m) => m.id !== id) } : prev,
+          { revalidate: false }
         );
+        invalidateAfterTrashChange();
       }
     } finally {
       setRestoring(null);
@@ -66,11 +78,14 @@ export default function TrashPage() {
         method: "POST",
       });
       if (res.ok) {
-        setData((prev) =>
-          prev
-            ? { ...prev, entretiens: prev.entretiens.filter((e) => e.id !== id) }
-            : prev
+        void mutate(
+          (prev) =>
+            prev
+              ? { ...prev, entretiens: prev.entretiens.filter((e) => e.id !== id) }
+              : prev,
+          { revalidate: false }
         );
+        invalidateAfterTrashChange();
       }
     } finally {
       setRestoring(null);
@@ -83,22 +98,34 @@ export default function TrashPage() {
     try {
       const res = await fetch(`/api/entretiens/${id}/force`, { method: "DELETE" });
       if (res.ok) {
-        setData((prev) =>
-          prev
-            ? { ...prev, entretiens: prev.entretiens.filter((e) => e.id !== id) }
-            : prev
+        void mutate(
+          (prev) =>
+            prev
+              ? { ...prev, entretiens: prev.entretiens.filter((e) => e.id !== id) }
+              : prev,
+          { revalidate: false }
         );
+        invalidateAfterTrashChange();
       }
     } finally {
       setForceDeleting(null);
     }
   }
 
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-white">Corbeille</h1>
+        <p className="text-red-400 text-sm">Impossible de charger la corbeille.</p>
+      </div>
+    );
+  }
+
   if (loading || !data) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 animate-pulse" aria-busy="true">
         <h1 className="text-2xl font-bold text-white">Corbeille</h1>
-        <p className="text-zinc-500">Chargement...</p>
+        <div className="h-24 rounded-xl bg-zinc-900 border border-zinc-800" />
       </div>
     );
   }

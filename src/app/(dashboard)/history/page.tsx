@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import useSWR from "swr";
 import Link from "next/link";
 import Image from "next/image";
+import { jsonFetcher } from "@/lib/fetcher";
+import { SWR_KEYS } from "@/lib/dashboard-swr";
 import { formatEntretienType } from "@/lib/utils";
 import {
   getEntretienStatus,
@@ -70,32 +73,26 @@ function StatutBadge({
 }
 
 export default function HistoryPage() {
-  const [entretiens, setEntretiens] = useState<Entretien[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, error } = useSWR<{
+    entretiens: Entretien[];
+    plan: string;
+  }>(SWR_KEYS.entretiensPlan, jsonFetcher, {
+    dedupingInterval: 60_000,
+    revalidateOnFocus: false,
+  });
+
+  const entretiens = data?.entretiens ?? [];
+  const loading = isLoading && !data;
+  const plan = data?.plan === "PRO" ? "PRO" : "FREE";
+
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterMotoId, setFilterMotoId] = useState("");
   const [filterAnnee, setFilterAnnee] = useState("");
   const [filterKm, setFilterKm] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [plan, setPlan] = useState<"FREE" | "PRO">("FREE");
   const [exporting, setExporting] = useState(false);
   const [selectedEntretienIds, setSelectedEntretienIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    fetch("/api/entretiens?withAccount=1")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.entretiens) {
-          setEntretiens(data.entretiens);
-          setPlan(data.plan === "PRO" ? "PRO" : "FREE");
-        } else {
-          setEntretiens(Array.isArray(data) ? data : []);
-        }
-      })
-      .catch(() => setEntretiens([]))
-      .finally(() => setLoading(false));
-  }, []);
 
   const entretiensTermines = useMemo(
     () => entretiens.filter((e) => e.statut === "termine"),
@@ -364,7 +361,11 @@ export default function HistoryPage() {
       </div>
 
       {loading ? (
-        <div className="text-zinc-500 py-8">Chargement...</div>
+        <div className="animate-pulse space-y-3 py-6" aria-busy="true">
+          <div className="h-12 w-full max-w-xl bg-zinc-800 rounded-lg" />
+          <div className="h-24 rounded-xl bg-zinc-900 border border-zinc-800" />
+          <div className="h-24 rounded-xl bg-zinc-900 border border-zinc-800" />
+        </div>
       ) : filteredAndSorted.length === 0 ? (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 md:p-12 text-center">
           <p className="text-zinc-500">

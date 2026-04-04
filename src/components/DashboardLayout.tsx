@@ -4,7 +4,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
+import { preload } from "swr";
+import { jsonFetcher } from "@/lib/fetcher";
+import { SWR_KEYS } from "@/lib/dashboard-swr";
 import ReportProblemButton from "./ReportProblemButton";
+
+function prefetchNavData(href: string) {
+  try {
+    if (href === "/dashboard") {
+      preload(SWR_KEYS.home, jsonFetcher);
+    } else if (href === "/motorcycles") {
+      preload(SWR_KEYS.motosPlan, jsonFetcher);
+    } else if (href === "/dashboard/entretiens" || href === "/history") {
+      preload(SWR_KEYS.entretiensPlan, jsonFetcher);
+    } else if (href === "/trash") {
+      preload(SWR_KEYS.trash, jsonFetcher);
+    }
+  } catch {
+    /* ignore */
+  }
+}
 
 const navLinks = [
   { href: "/dashboard", label: "Tableau de bord" },
@@ -67,6 +86,9 @@ export default function DashboardLayout({
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch
+                onMouseEnter={() => prefetchNavData(link.href)}
+                onFocus={() => prefetchNavData(link.href)}
                 className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                   pathname === link.href
                     ? "bg-orange-500/20 text-orange-500"
@@ -127,6 +149,9 @@ export default function DashboardLayout({
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch
+                  onMouseEnter={() => prefetchNavData(link.href)}
+                  onFocus={() => prefetchNavData(link.href)}
                   onClick={() => setMenuOpen(false)}
                   className={`min-h-[44px] flex items-center px-4 rounded-lg text-sm font-medium transition-colors ${
                     pathname === link.href

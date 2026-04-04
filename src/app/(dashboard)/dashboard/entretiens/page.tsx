@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
+import useSWR, { mutate as globalMutate } from "swr";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { formatEntretienType } from "@/lib/utils";
+import { jsonFetcher } from "@/lib/fetcher";
+import { SWR_KEYS } from "@/lib/dashboard-swr";
 import {
   getEntretienStatus,
   getStatusColor,
@@ -26,14 +29,25 @@ type Entretien = {
   invoiceType?: string | null;
 };
 
+type EntretiensPayload = { entretiens: Entretien[]; plan: string };
+
+const swrOpts = { dedupingInterval: 60_000, revalidateOnFocus: false };
+
 export default function EntretiensPage() {
   const searchParams = useSearchParams();
   const filter = searchParams.get("filter");
 
-  const [entretiens, setEntretiens] = useState<Entretien[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, error, mutate } = useSWR<EntretiensPayload>(
+    SWR_KEYS.entretiensPlan,
+    jsonFetcher,
+    swrOpts
+  );
+
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [plan, setPlan] = useState<"FREE" | "PRO">("FREE");
+
+  const entretiens = data?.entretiens ?? [];
+  const plan = data?.plan === "PRO" ? "PRO" : "FREE";
+  const loading = isLoading && !data;
 
   const filteredEntretiens = useMemo(() => {
     if (filter === "upcoming") {
@@ -42,25 +56,18 @@ export default function EntretiensPage() {
     return entretiens;
   }, [entretiens, filter]);
 
-  useEffect(() => {
-    fetch("/api/entretiens?withAccount=1")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.entretiens) {
-          setEntretiens(data.entretiens);
-          setPlan(data.plan === "PRO" ? "PRO" : "FREE");
-        } else {
-          setEntretiens(Array.isArray(data) ? data : []);
-        }
-      })
-      .catch(() => setEntretiens([]))
-      .finally(() => setLoading(false));
-  }, []);
-
   async function handleDelete(id: string) {
     const res = await fetch(`/api/entretiens/${id}`, { method: "DELETE" });
     if (res.ok) {
-      setEntretiens((prev) => prev.filter((e) => e.id !== id));
+      void mutate(
+        (prev) =>
+          prev
+            ? { ...prev, entretiens: prev.entretiens.filter((e) => e.id !== id) }
+            : prev,
+        { revalidate: false }
+      );
+      void globalMutate(SWR_KEYS.home);
+      void globalMutate(SWR_KEYS.entretiensPlan);
       setDeleteTarget(null);
     }
   }
@@ -70,6 +77,15 @@ export default function EntretiensPage() {
     filter === "upcoming"
       ? "Vos maintenances à prévoir"
       : "Liste de vos entretiens de maintenance";
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-white">{pageTitle}</h1>
+        <p className="text-red-400 text-sm">Impossible de charger les entretiens.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -87,7 +103,12 @@ export default function EntretiensPage() {
       </div>
 
       {loading ? (
-        <div className="text-zinc-500">Chargement...</div>
+        <div className="animate-pulse space-y-3" aria-busy="true">
+          <div className="h-10 w-full max-w-lg bg-zinc-800 rounded-lg" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="h-48 rounded-xl bg-zinc-900 border border-zinc-800" />
+          </div>
+        </div>
       ) : filteredEntretiens.length === 0 ? (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 text-center">
           <p className="text-zinc-500 mb-4">
@@ -143,10 +164,17 @@ export default function EntretiensPage() {
                 invoiceUrl={e.invoiceUrl}
                 invoiceType={e.invoiceType}
                 onInvoiceChanged={({ invoiceUrl, invoiceType }) => {
-                  setEntretiens((prev) =>
-                    prev.map((x) =>
-                      x.id === e.id ? { ...x, invoiceUrl, invoiceType } : x
-                    )
+                  void mutate(
+                    (prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            entretiens: prev.entretiens.map((x) =>
+                              x.id === e.id ? { ...x, invoiceUrl, invoiceType } : x
+                            ),
+                          }
+                        : prev,
+                    { revalidate: false }
                   );
                 }}
               />
