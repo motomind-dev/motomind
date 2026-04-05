@@ -137,6 +137,204 @@ export type MotorcycleForEmail = {
   modele: string;
 };
 
+export type PlannedEntretienForEmail = {
+  type: string;
+  nextDueDate: Date | null;
+  nextDueMileage: number | null;
+};
+
+/**
+ * Rappel Premium : entretien planifié par l’utilisateur (date / km renseignés dans MotoMind).
+ */
+export async function sendPlannedEntretienReminderEmail(
+  userEmail: string,
+  planned: PlannedEntretienForEmail,
+  motorcycle: MotorcycleForEmail
+): Promise<{ success: boolean; error?: string }> {
+  if (!resend) {
+    console.log("Email disabled: RESEND_API_KEY missing");
+    return { success: false, error: "RESEND_API_KEY non configuré" };
+  }
+
+  const typeLabel = formatEntretienType(planned.type);
+  const motoLabel = `${motorcycle.marque} ${motorcycle.modele}`;
+  const dateStr = planned.nextDueDate
+    ? new Date(planned.nextDueDate).toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
+  const kmStr =
+    planned.nextDueMileage != null
+      ? `${planned.nextDueMileage.toLocaleString("fr-FR")} km`
+      : null;
+
+  const detailLines: string[] = [];
+  if (dateStr) {
+    detailLines.push(
+      `<p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${T.text};"><strong style="color:${T.text};">Date prévue :</strong> ${dateStr}</p>`
+    );
+  }
+  if (kmStr) {
+    detailLines.push(
+      `<p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${T.text};"><strong style="color:${T.text};">Kilométrage cible :</strong> ${kmStr}</p>`
+    );
+  }
+
+  const appUrl = getAppBaseUrl();
+  const carnetUrl = `${appUrl}/dashboard/entretiens`;
+
+  const inner = `
+              <p style="margin:0 0 12px;font-size:18px;font-weight:600;color:${T.text};">Rappel : <span style="color:${T.accentCta};">entretien planifié</span> 📅</p>
+              <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:${T.textMuted};">
+                Tu as toi-même planifié cet entretien dans MotoMind. L’échéance approche — pense à ne pas l’oublier.
+              </p>
+              <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${T.text};"><strong style="color:${T.text};">Moto :</strong> ${motoLabel}</p>
+              <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${T.text};"><strong style="color:${T.text};">Entretien :</strong> ${typeLabel}</p>
+              ${detailLines.join("")}
+              <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:${T.textMuted};">Tu peux ajuster ou marquer l’entretien comme effectué depuis ton carnet.</p>
+              ${emailButton(carnetUrl, "Ouvrir mon carnet")}
+              <p style="margin:16px 0 0;font-size:13px;line-height:1.5;color:${T.textDim};">Si le bouton ne fonctionne pas : <span style="color:${T.textMuted};word-break:break-all;">${carnetUrl}</span></p>`;
+
+  const html = emailDocument(inner);
+
+  const textLines = [
+    "Rappel : entretien planifié — MotoMind",
+    "",
+    "Tu as planifié cet entretien dans l’app. L’échéance approche.",
+    "",
+    `Moto : ${motoLabel}`,
+    `Entretien : ${typeLabel}`,
+    ...(dateStr ? [`Date prévue : ${dateStr}`] : []),
+    ...(kmStr ? [`Kilométrage cible : ${kmStr}`] : []),
+    "",
+    `Ouvre ton carnet : ${carnetUrl}`,
+    "",
+    EMAIL_FOOTER_TEXT,
+  ];
+
+  try {
+    const { error } = await resend.emails.send({
+      from: resendFromAddress(),
+      to: userEmail,
+      subject: "Rappel : ton entretien planifié approche — MotoMind",
+      html,
+      text: textLines.join("\n"),
+      ...(resendReplyTo() ? { replyTo: resendReplyTo() } : {}),
+    });
+
+    if (error) {
+      console.error("Resend error (planned entretien):", error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (e) {
+    console.error("sendPlannedEntretienReminderEmail error:", e);
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : "Erreur d'envoi",
+    };
+  }
+}
+
+/**
+ * Premium : l’utilisateur n’a pas marqué l’entretien planifié — notification le lendemain de la date prévue.
+ */
+export async function sendPlannedEntretienOverdueEmail(
+  userEmail: string,
+  planned: PlannedEntretienForEmail,
+  motorcycle: MotorcycleForEmail
+): Promise<{ success: boolean; error?: string }> {
+  if (!resend) {
+    console.log("Email disabled: RESEND_API_KEY missing");
+    return { success: false, error: "RESEND_API_KEY non configuré" };
+  }
+
+  const typeLabel = formatEntretienType(planned.type);
+  const motoLabel = `${motorcycle.marque} ${motorcycle.modele}`;
+  const dateStr = planned.nextDueDate
+    ? new Date(planned.nextDueDate).toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
+  const kmStr =
+    planned.nextDueMileage != null
+      ? `${planned.nextDueMileage.toLocaleString("fr-FR")} km`
+      : null;
+
+  const detailLines: string[] = [];
+  if (dateStr) {
+    detailLines.push(
+      `<p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${T.text};"><strong style="color:${T.text};">Date prévue :</strong> ${dateStr}</p>`
+    );
+  }
+  if (kmStr) {
+    detailLines.push(
+      `<p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${T.text};"><strong style="color:${T.text};">Kilométrage cible :</strong> ${kmStr}</p>`
+    );
+  }
+
+  const appUrl = getAppBaseUrl();
+  const carnetUrl = `${appUrl}/dashboard/entretiens`;
+
+  const inner = `
+              <p style="margin:0 0 12px;font-size:18px;font-weight:600;color:${T.text};">Entretien planifié <span style="color:${T.accentCta};">non effectué</span> ⏱️</p>
+              <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:${T.textMuted};">
+                Tu avais planifié cet entretien dans MotoMind. La date prévue est passée : pense à le réaliser ou à mettre à jour ton carnet si c’est déjà fait.
+              </p>
+              <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${T.text};"><strong style="color:${T.text};">Moto :</strong> ${motoLabel}</p>
+              <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${T.text};"><strong style="color:${T.text};">Entretien :</strong> ${typeLabel}</p>
+              ${detailLines.join("")}
+              <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:${T.textMuted};">Marque l’entretien comme effectué ou replanifie depuis ton carnet.</p>
+              ${emailButton(carnetUrl, "Ouvrir mon carnet")}
+              <p style="margin:16px 0 0;font-size:13px;line-height:1.5;color:${T.textDim};">Si le bouton ne fonctionne pas : <span style="color:${T.textMuted};word-break:break-all;">${carnetUrl}</span></p>`;
+
+  const html = emailDocument(inner);
+
+  const textLines = [
+    "Retard : entretien planifié — MotoMind",
+    "",
+    "La date que tu avais prévue pour cet entretien est passée.",
+    "",
+    `Moto : ${motoLabel}`,
+    `Entretien : ${typeLabel}`,
+    ...(dateStr ? [`Date prévue : ${dateStr}`] : []),
+    ...(kmStr ? [`Kilométrage cible : ${kmStr}`] : []),
+    "",
+    `Ouvre ton carnet : ${carnetUrl}`,
+    "",
+    EMAIL_FOOTER_TEXT,
+  ];
+
+  try {
+    const { error } = await resend.emails.send({
+      from: resendFromAddress(),
+      to: userEmail,
+      subject: "Retard : ton entretien planifié — MotoMind",
+      html,
+      text: textLines.join("\n"),
+      ...(resendReplyTo() ? { replyTo: resendReplyTo() } : {}),
+    });
+
+    if (error) {
+      console.error("Resend error (planned entretien retard):", error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (e) {
+    console.error("sendPlannedEntretienOverdueEmail error:", e);
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : "Erreur d'envoi",
+    };
+  }
+}
+
 /**
  * Envoie un email de vérification d'inscription.
  */
@@ -276,16 +474,20 @@ export async function sendMaintenanceReminderEmail(
 
   const typeLabel = formatEntretienType(maintenance.type);
   const motoLabel = `${motorcycle.marque} ${motorcycle.modele}`;
+  const appUrl = getAppBaseUrl();
+  const carnetUrl = `${appUrl}/dashboard/entretiens`;
 
   const inner = `
-              <p style="margin:0 0 12px;font-size:18px;font-weight:600;color:${T.text};">Rappel entretien 🏍️</p>
+              <p style="margin:0 0 12px;font-size:18px;font-weight:600;color:${T.text};">Rappel <span style="color:${T.accentCta};">entretien</span> 🏍️</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:${T.textMuted};">
                 Un entretien approche pour ta moto. Pense à planifier une intervention chez ton garagiste.
               </p>
               <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${T.text};"><strong style="color:${T.text};">Moto :</strong> ${motoLabel}</p>
               <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${T.text};"><strong style="color:${T.text};">Entretien :</strong> ${typeLabel}</p>
               <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:${T.text};"><strong style="color:${T.text};">Kilométrage prévu :</strong> ${maintenance.nextDueMileage.toLocaleString("fr-FR")} km</p>
-              <p style="margin:0;font-size:14px;line-height:1.6;color:${T.textMuted};">Ouvre MotoMind pour voir le détail et mettre à jour ton carnet.</p>`;
+              <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:${T.textMuted};">Consulte le détail et mets à jour ton carnet depuis l’app.</p>
+              ${emailButton(carnetUrl, "Ouvrir mon carnet")}
+              <p style="margin:16px 0 0;font-size:13px;line-height:1.5;color:${T.textDim};">Si le bouton ne fonctionne pas : <span style="color:${T.textMuted};word-break:break-all;">${carnetUrl}</span></p>`;
 
   const html = emailDocument(inner);
 
@@ -295,6 +497,8 @@ export async function sendMaintenanceReminderEmail(
     `Moto : ${motoLabel}`,
     `Entretien : ${typeLabel}`,
     `Kilométrage prévu : ${maintenance.nextDueMileage.toLocaleString("fr-FR")} km`,
+    "",
+    `Ouvre ton carnet : ${carnetUrl}`,
     "",
     EMAIL_FOOTER_TEXT,
   ].join("\n");

@@ -102,7 +102,9 @@ model Entretien {
   cout                  Float?
   statut                String    @default("A_VENIR") // A_VENIR, proche, en_retard, termine
   garage                String?
-  reminderSent          Boolean   @default(false)
+  reminderSent              Boolean   @default(false)
+  /// Mail « retard » : lendemain calendaire de nextDueDate (entretien planifié non fait).
+  plannedLateReminderSent   Boolean   @default(false)
   nextDueMileage        Int?
   nextDueDate           DateTime?
   reminderMileageBefore  Int       @default(500)

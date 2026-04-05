@@ -29,7 +29,21 @@ export async function PATCH(
   }
 
   const body = await req.json();
-  const { type, date, kilometrage, note, cout, statut, garage, invoiceUrl, invoiceType } = body;
+  const {
+    type,
+    date,
+    kilometrage,
+    note,
+    cout,
+    statut,
+    garage,
+    invoiceUrl,
+    invoiceType,
+    nextDueDate: bodyNextDueDate,
+    nextDueMileage: bodyNextDueMileage,
+    reminderDaysBefore: bodyReminderDaysBefore,
+    reminderMileageBefore: bodyReminderMileageBefore,
+  } = body;
 
   if (invoiceUrl !== undefined || invoiceType !== undefined) {
     const user = await prisma.user.findUnique({
@@ -44,6 +58,31 @@ export async function PATCH(
     }
   }
 
+  const scheduling: Record<string, unknown> = {};
+  let touchesScheduling = false;
+  if (bodyNextDueDate !== undefined) {
+    touchesScheduling = true;
+    scheduling.nextDueDate =
+      bodyNextDueDate === null || bodyNextDueDate === ""
+        ? null
+        : new Date(bodyNextDueDate);
+  }
+  if (bodyNextDueMileage !== undefined) {
+    touchesScheduling = true;
+    scheduling.nextDueMileage =
+      bodyNextDueMileage === null || bodyNextDueMileage === ""
+        ? null
+        : parseInt(String(bodyNextDueMileage), 10);
+  }
+  if (bodyReminderDaysBefore !== undefined) {
+    touchesScheduling = true;
+    scheduling.reminderDaysBefore = parseInt(String(bodyReminderDaysBefore), 10);
+  }
+  if (bodyReminderMileageBefore !== undefined) {
+    touchesScheduling = true;
+    scheduling.reminderMileageBefore = parseInt(String(bodyReminderMileageBefore), 10);
+  }
+
   const updated = await prisma.entretien.update({
     where: { id },
     data: {
@@ -56,6 +95,12 @@ export async function PATCH(
       ...(garage !== undefined && { garage }),
       ...(invoiceUrl !== undefined && { invoiceUrl: invoiceUrl || null }),
       ...(invoiceType !== undefined && { invoiceType: invoiceType || null }),
+      ...scheduling,
+      ...(touchesScheduling &&
+        entretien.statut !== "termine" && {
+          reminderSent: false,
+          plannedLateReminderSent: false,
+        }),
     },
   });
 
