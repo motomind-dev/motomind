@@ -1,6 +1,6 @@
 /**
- * Client-side PDF export for maintenance history.
- * Uses jspdf - requires npm install jspdf
+ * Export PDF du carnet d'entretien (client, jsPDF).
+ * Charte : couleurs MotoMind (tailwind theme.moto.orange).
  */
 
 import { formatEntretienType } from "./utils";
@@ -19,6 +19,84 @@ type EntretienForPdf = {
   moto?: { id: string; marque: string; modele: string; annee: number; kilometrage?: number };
 };
 
+/** Aligné sur tailwind.config — moto.orange */
+const ORANGE: [number, number, number] = [255, 107, 53];
+const TEXT: [number, number, number] = [38, 38, 38];
+const MUTED: [number, number, number] = [115, 115, 115];
+const LINE: [number, number, number] = [232, 232, 232];
+const WHITE: [number, number, number] = [255, 255, 255];
+
+const MARGIN = 18;
+const HEADER_H = 26;
+const FOOTER_RESERVE = 22;
+const THIN_BAR = 2.5;
+
+type DocCtx = {
+  doc: import("jspdf").jsPDF;
+  pageWidth: number;
+  pageHeight: number;
+  contentBottom: number;
+  y: number;
+};
+
+function contentBottom(pageHeight: number) {
+  return pageHeight - FOOTER_RESERVE;
+}
+
+function newPage(ctx: DocCtx) {
+  ctx.doc.addPage();
+  ctx.doc.setFillColor(...ORANGE);
+  ctx.doc.rect(0, 0, ctx.pageWidth, THIN_BAR, "F");
+  ctx.y = MARGIN + THIN_BAR + 2;
+}
+
+function ensureSpace(ctx: DocCtx, neededMm: number) {
+  if (ctx.y + neededMm <= ctx.contentBottom) return;
+  newPage(ctx);
+}
+
+function drawPage1Header(
+  doc: import("jspdf").jsPDF,
+  pageWidth: number,
+  exportDateLabel: string
+) {
+  doc.setFillColor(...ORANGE);
+  doc.rect(0, 0, pageWidth, HEADER_H, "F");
+  doc.setTextColor(...WHITE);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Carnet d'entretien", MARGIN, 13);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text(`MotoMind · ${exportDateLabel}`, MARGIN, 21);
+  doc.setTextColor(...TEXT);
+}
+
+function drawFooters(doc: import("jspdf").jsPDF, pageWidth: number, pageHeight: number) {
+  const total = doc.internal.getNumberOfPages();
+  const footerY = pageHeight - 14;
+
+  for (let i = 1; i <= total; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(...ORANGE);
+    doc.setLineWidth(0.35);
+    doc.line(MARGIN, footerY - 4, pageWidth - MARGIN, footerY - 4);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...ORANGE);
+    doc.text("MotoMind", MARGIN, footerY);
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...MUTED);
+    doc.setFontSize(8);
+    doc.text("Le carnet numérique de votre moto · motomind.fr", MARGIN, footerY + 4.5);
+
+    const pageLabel = `Page ${i} / ${total}`;
+    doc.text(pageLabel, pageWidth - MARGIN, footerY, { align: "right" });
+  }
+}
+
 export async function exportMaintenanceToPdf(
   entretiens: EntretienForPdf[]
 ): Promise<void> {
@@ -27,12 +105,31 @@ export async function exportMaintenanceToPdf(
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
-    let y = 20;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const bottom = contentBottom(pageHeight);
 
-    doc.setFontSize(18);
-    doc.text("Carnet d'entretien - MotoMind", margin, y);
-    y += 12;
+    const exportDateLabel = new Date().toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+
+    drawPage1Header(doc, pageWidth, exportDateLabel);
+
+    let y = HEADER_H + 8;
+
+    const ctx: DocCtx = {
+      doc,
+      pageWidth,
+      pageHeight,
+      contentBottom: bottom,
+      get y() {
+        return y;
+      },
+      set y(v: number) {
+        y = v;
+      },
+    };
 
     const groupedByMoto = new Map<string, EntretienForPdf[]>();
     for (const e of entretiens) {
@@ -45,54 +142,74 @@ export async function exportMaintenanceToPdf(
       const first = list[0];
       const motoInfo = first?.moto;
 
-      doc.setFontSize(14);
+      ensureSpace(ctx, 28);
+
       if (motoInfo) {
-        doc.text(`${motoInfo.marque} ${motoInfo.modele} (${motoInfo.annee})`, margin, y);
-        y += 6;
-        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.setTextColor(...ORANGE);
+        doc.text(`${motoInfo.marque} ${motoInfo.modele} (${motoInfo.annee})`, MARGIN, y);
+        y += 7;
+
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...TEXT);
         const km = motoInfo.kilometrage ?? first?.kilometrage ?? 0;
-        doc.text(`Kilométrage actuel : ${Number(km).toLocaleString("fr-FR")} km`, margin, y);
-        y += 10;
+        doc.text(`Kilométrage actuel : ${Number(km).toLocaleString("fr-FR")} km`, MARGIN, y);
+        y += 9;
       }
 
-      doc.setFontSize(12);
-      doc.text("Historique des entretiens", margin, y);
-      y += 8;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(...TEXT);
+      doc.text("Historique des entretiens", MARGIN, y);
+      y += 6;
+      doc.setDrawColor(...ORANGE);
+      doc.setLineWidth(0.5);
+      doc.line(MARGIN, y, MARGIN + 52, y);
+      y += 7;
 
       for (const e of list) {
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
+        const blockEstimate =
+          28 +
+          (e.note ? doc.splitTextToSize(e.note, pageWidth - 2 * MARGIN).length * 5 : 0) +
+          (e.invoiceUrl && e.invoiceType === "image" ? 35 : 0);
+        ensureSpace(ctx, blockEstimate);
 
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.text(formatEntretienType(e.type), margin, y);
+        doc.setTextColor(...TEXT);
+        doc.text(formatEntretienType(e.type), MARGIN, y);
         y += 5;
 
-      if (e.statut) {
-        doc.setFont("helvetica", "normal");
-        doc.text(`Statut : ${getStatusLabel(e.statut)}`, margin, y);
-        y += 5;
-        doc.setFont("helvetica", "bold");
-      }
+        if (e.statut) {
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(...MUTED);
+          doc.text(`Statut : ${getStatusLabel(e.statut)}`, MARGIN, y);
+          y += 5;
+        }
 
-        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...TEXT);
         doc.text(
-          `Date : ${new Date(e.date).toLocaleDateString("fr-FR")} - ${e.kilometrage.toLocaleString("fr-FR")} km`,
-          margin,
+          `${new Date(e.date).toLocaleDateString("fr-FR")} · ${e.kilometrage.toLocaleString("fr-FR")} km`,
+          MARGIN,
           y
         );
         y += 5;
+
         if (e.garage) {
-          doc.text(`Garage : ${e.garage}`, margin, y);
+          doc.setTextColor(...MUTED);
+          doc.text(`Garage : ${e.garage}`, MARGIN, y);
           y += 5;
+          doc.setTextColor(...TEXT);
         }
+
         if (e.note) {
-          const lines = doc.splitTextToSize(e.note, pageWidth - 2 * margin);
-          doc.text(lines, margin, y);
+          doc.setTextColor(...TEXT);
+          const lines = doc.splitTextToSize(e.note, pageWidth - 2 * MARGIN);
+          doc.text(lines, MARGIN, y);
           y += lines.length * 5 + 2;
         }
+
         if (e.invoiceUrl) {
           if (e.invoiceType === "image") {
             try {
@@ -100,32 +217,42 @@ export async function exportMaintenanceToPdf(
               const imgUrl = e.invoiceUrl.startsWith("http") ? e.invoiceUrl : `${baseUrl}${e.invoiceUrl}`;
               const img = await loadImageAsDataUrl(imgUrl);
               if (img) {
-                const imgW = 40;
-                const imgH = 30;
-                if (y + imgH > 270) {
-                  doc.addPage();
-                  y = 20;
-                }
-                doc.addImage(img, "JPEG", margin, y, imgW, imgH);
+                const imgW = 42;
+                const imgH = 32;
+                ensureSpace(ctx, imgH + 4);
+                doc.addImage(img, "JPEG", MARGIN, y, imgW, imgH);
                 y += imgH + 3;
               } else {
-                doc.text("Facture : voir document joint", margin, y);
+                doc.setTextColor(...MUTED);
+                doc.text("Facture : voir document dans l’application", MARGIN, y);
                 y += 5;
+                doc.setTextColor(...TEXT);
               }
             } catch {
-              doc.text("Facture : voir document joint", margin, y);
+              doc.setTextColor(...MUTED);
+              doc.text("Facture : voir document dans l’application", MARGIN, y);
               y += 5;
+              doc.setTextColor(...TEXT);
             }
           } else {
-            doc.text("Facture disponible (non intégrée)", margin, y);
+            doc.setTextColor(...MUTED);
+            doc.text("Facture PDF disponible dans l’application", MARGIN, y);
             y += 5;
+            doc.setTextColor(...TEXT);
           }
         }
-        y += 4;
+
+        y += 3;
+        doc.setDrawColor(...LINE);
+        doc.setLineWidth(0.2);
+        doc.line(MARGIN, y, pageWidth - MARGIN, y);
+        y += 6;
       }
-      y += 8;
+
+      y += 4;
     }
 
+    drawFooters(doc, pageWidth, pageHeight);
     doc.save("carnet-entretien-motomind.pdf");
   } catch (err) {
     console.error("[export-pdf] Erreur:", err);
