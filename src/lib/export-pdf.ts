@@ -73,7 +73,7 @@ function drawPage1Header(
 }
 
 function drawFooters(doc: import("jspdf").jsPDF, pageWidth: number, pageHeight: number) {
-  const total = doc.internal.getNumberOfPages();
+  const total = doc.getNumberOfPages();
   const footerY = pageHeight - 14;
 
   for (let i = 1; i <= total; i++) {
