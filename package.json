@@ -9,6 +9,7 @@
     "lint": "next lint",
     "postinstall": "prisma generate && patch-package",
     "db:push": "prisma db push",
+    "db:apply-planned-late-reminder": "prisma db execute --file prisma/sql/add_planned_late_reminder_sent.sql --schema prisma/schema.prisma",
     "db:reset": "prisma db push --force-reset",
     "db:studio": "prisma studio"
   },
