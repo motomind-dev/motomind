@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { put } from "@vercel/blob";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -78,18 +79,38 @@ export async function POST(req: Request) {
     );
   }
 
+  if (process.env.VERCEL === "1" && !process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json(
+      {
+        error:
+          "Stockage des factures non configuré : ajoutez Vercel Blob au projet et la variable BLOB_READ_WRITE_TOKEN (voir .env.example).",
+      },
+      { status: 503 }
+    );
+  }
+
+  const ext = EXT_BY_MIME[mime] ?? ".bin";
+  const name = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+  const buffer = Buffer.from(await (file as File).arrayBuffer());
+  const invoiceType = TYPE_BY_MIME[mime] ?? "image";
+
   try {
-    const dir = path.join(process.cwd(), "public", "uploads", "invoices");
-    await mkdir(dir, { recursive: true });
+    let url: string;
 
-    const ext = EXT_BY_MIME[mime] ?? ".bin";
-    const name = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
-    const filePath = path.join(dir, name);
-    const buffer = Buffer.from(await (file as File).arrayBuffer());
-    await writeFile(filePath, buffer);
-
-    const url = `/uploads/invoices/${name}`;
-    const invoiceType = TYPE_BY_MIME[mime] ?? "image";
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blob = await put(`invoices/${name}`, buffer, {
+        access: "public",
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+        contentType: mime,
+      });
+      url = blob.url;
+    } else {
+      const dir = path.join(process.cwd(), "public", "uploads", "invoices");
+      await mkdir(dir, { recursive: true });
+      const filePath = path.join(dir, name);
+      await writeFile(filePath, buffer);
+      url = `/uploads/invoices/${name}`;
+    }
 
     return NextResponse.json({ url, invoiceType });
   } catch (err) {

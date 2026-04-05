@@ -61,7 +61,7 @@ export default function EntretienInvoiceManager({
 
       if (!uploadRes.ok) {
         const data = await uploadRes.json().catch(() => ({}));
-        throw new Error(data?.error || "Erreur lors de l&apos;upload");
+        throw new Error(data?.error || "Erreur lors de l'upload");
       }
 
       const { url, invoiceType: type } = (await uploadRes.json()) as {
@@ -86,7 +86,11 @@ export default function EntretienInvoiceManager({
       onInvoiceChanged({ invoiceUrl: url, invoiceType: type });
     } catch (e) {
       console.error("[EntretienInvoiceManager] upload/patch failed:", e);
-      setError("Impossible de gérer la facture pour le moment.");
+      setError(
+        e instanceof Error && e.message
+          ? e.message
+          : "Impossible de gérer la facture pour le moment."
+      );
     } finally {
       setBusy(false);
     }
