@@ -4,10 +4,8 @@
  */
 
 import { prisma } from "../src/lib/prisma";
-import {
-  checkMaintenanceReminders,
-  entretienMatchesCategory,
-} from "../src/lib/reminders";
+import { checkMaintenanceReminders } from "../src/lib/reminders";
+import { entretienMatchesCategory } from "../src/lib/maintenance-entretien-category";
 import { getMaintenanceStatus, INTERVALLES_KM } from "../src/lib/utils";
 
 const email =

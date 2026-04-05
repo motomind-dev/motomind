@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getEtatMoto, INTERVALLES_KM } from "@/lib/utils";
+import { entretienMatchesCategory } from "@/lib/maintenance-entretien-category";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -41,11 +42,13 @@ export async function GET() {
     const types = ["vidange", "chaine", "pneus", "freins", "revision_generale"] as const;
 
     for (const t of types) {
-      const dernier = motoPrincipale.entretiens.find((e) => e.type === t);
+      const dernier = motoPrincipale.entretiens.find((e) =>
+        entretienMatchesCategory(e.type, t)
+      );
       if (!dernier) {
         continue;
       }
-      const intervalle = INTERVALLES_KM[t];
+      const intervalle = dernier.intervalleKm ?? INTERVALLES_KM[t] ?? 5000;
       const kmProchain = dernier.kilometrage + intervalle;
 
       if (kmProchain > km && (!prochainKm || kmProchain < prochainKm)) {

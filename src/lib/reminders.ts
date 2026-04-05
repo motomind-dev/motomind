@@ -1,51 +1,15 @@
 import { prisma } from "./prisma";
 import { INTERVALLES_KM, getMaintenanceStatus } from "./utils";
 import { sendMaintenanceReminderEmail } from "./email";
+import {
+  MAINTENANCE_CATEGORIES,
+  entretienMatchesCategory,
+} from "./maintenance-entretien-category";
 
-const REMINDER_CATEGORIES = [
-  "vidange",
-  "chaine",
-  "pneus",
-  "freins",
-  "revision_generale",
-] as const;
-
-type ReminderCategory = (typeof REMINDER_CATEGORIES)[number];
-
-/**
- * L’UI / imports peuvent enregistrer `type` en minuscule, en majuscules ou avec un libellé
- * (ex. « L’huile moteur », « FREIN »). On mappe vers la catégorie métier pour les rappels.
- */
-export function entretienMatchesCategory(
-  storedType: string,
-  category: ReminderCategory
-): boolean {
-  const t = storedType.trim().toLowerCase();
-  switch (category) {
-    case "vidange":
-      return (
-        t === "vidange" ||
-        t.includes("huile") ||
-        t.includes("vidange") ||
-        t === "oil_change"
-      );
-    case "freins":
-      return t === "freins" || t === "frein" || t.startsWith("frein");
-    case "chaine":
-      return t === "chaine" || t === "chain";
-    case "pneus":
-      return t === "pneus" || t.includes("pneu");
-    case "revision_generale":
-      return (
-        t === "revision_generale" ||
-        t.includes("revision") ||
-        t.includes("révision") ||
-        t.includes("revison")
-      );
-    default:
-      return t === category;
-  }
-}
+export {
+  entretienMatchesCategory,
+  MAINTENANCE_CATEGORIES,
+} from "./maintenance-entretien-category";
 
 /**
  * Vérifie les entretiens à venir et envoie les emails de rappel si nécessaire.
@@ -77,7 +41,7 @@ export async function checkMaintenanceReminders(
     const userEmail = moto.user?.email;
     if (!userEmail) continue;
 
-    for (const type of REMINDER_CATEGORIES) {
+    for (const type of MAINTENANCE_CATEGORIES) {
       const dernier = moto.entretiens.find((e) =>
         entretienMatchesCategory(e.type, type)
       );

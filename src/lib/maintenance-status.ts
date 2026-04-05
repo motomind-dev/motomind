@@ -3,6 +3,10 @@ import {
   computeMaintenanceDisplayStatus,
   type MaintenanceDisplayStatus,
 } from "@/lib/services/maintenance-status";
+import {
+  MAINTENANCE_CATEGORIES,
+  entretienMatchesCategory,
+} from "./maintenance-entretien-category";
 
 export type MaintenanceStatusItem = {
   motoId: string;
@@ -47,21 +51,14 @@ type MotoWithEntretiens = {
 export function computeMaintenanceStatusItems(
   motos: MotoWithEntretiens[]
 ): MaintenanceStatusItem[] {
-  const types = [
-    "vidange",
-    "chaine",
-    "pneus",
-    "freins",
-    "revision_generale",
-  ] as const;
   const items: MaintenanceStatusItem[] = [];
 
   for (const moto of motos) {
     const motoName = `${moto.marque} ${moto.modele}`;
 
-    for (const type of types) {
+    for (const type of MAINTENANCE_CATEGORIES) {
       const derniers = moto.entretiens
-        .filter((e) => e.type === type)
+        .filter((e) => entretienMatchesCategory(e.type, type))
         .sort((a, b) => b.kilometrage - a.kilometrage);
       const dernier = derniers[0];
 
