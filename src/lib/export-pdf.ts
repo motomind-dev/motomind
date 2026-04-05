@@ -19,11 +19,12 @@ type EntretienForPdf = {
   moto?: { id: string; marque: string; modele: string; annee: number; kilometrage?: number };
 };
 
-/** Aligné sur tailwind.config — moto.orange */
+/** Charte MotoMind — orange + thème sombre (aligné sur tailwind dark-900 / app) */
 const ORANGE: [number, number, number] = [255, 107, 53];
-const TEXT: [number, number, number] = [38, 38, 38];
-const MUTED: [number, number, number] = [115, 115, 115];
-const LINE: [number, number, number] = [232, 232, 232];
+const BG: [number, number, number] = [17, 17, 17]; // #111111
+const BODY: [number, number, number] = [245, 245, 245]; // texte principal sur fond noir
+const MUTED: [number, number, number] = [163, 163, 163]; // second plan lisible sur noir
+const LINE: [number, number, number] = [55, 55, 55]; // séparateurs sur fond sombre
 const WHITE: [number, number, number] = [255, 255, 255];
 
 const MARGIN = 18;
@@ -43,8 +44,18 @@ function contentBottom(pageHeight: number) {
   return pageHeight - FOOTER_RESERVE;
 }
 
+function paintDarkBackground(
+  doc: import("jspdf").jsPDF,
+  pageWidth: number,
+  pageHeight: number
+) {
+  doc.setFillColor(...BG);
+  doc.rect(0, 0, pageWidth, pageHeight, "F");
+}
+
 function newPage(ctx: DocCtx) {
   ctx.doc.addPage();
+  paintDarkBackground(ctx.doc, ctx.pageWidth, ctx.pageHeight);
   ctx.doc.setFillColor(...ORANGE);
   ctx.doc.rect(0, 0, ctx.pageWidth, THIN_BAR, "F");
   ctx.y = MARGIN + THIN_BAR + 2;
@@ -69,7 +80,7 @@ function drawPage1Header(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.text(`MotoMind · ${exportDateLabel}`, MARGIN, 21);
-  doc.setTextColor(...TEXT);
+  doc.setTextColor(...BODY);
 }
 
 function drawFooters(doc: import("jspdf").jsPDF, pageWidth: number, pageHeight: number) {
@@ -93,6 +104,7 @@ function drawFooters(doc: import("jspdf").jsPDF, pageWidth: number, pageHeight: 
     doc.text("Le carnet numérique de votre moto · motomind.fr", MARGIN, footerY + 4.5);
 
     const pageLabel = `Page ${i} / ${total}`;
+    doc.setTextColor(...MUTED);
     doc.text(pageLabel, pageWidth - MARGIN, footerY, { align: "right" });
   }
 }
@@ -107,6 +119,8 @@ export async function exportMaintenanceToPdf(
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const bottom = contentBottom(pageHeight);
+
+    paintDarkBackground(doc, pageWidth, pageHeight);
 
     const exportDateLabel = new Date().toLocaleDateString("fr-FR", {
       day: "2-digit",
@@ -152,7 +166,7 @@ export async function exportMaintenanceToPdf(
         y += 7;
 
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...TEXT);
+        doc.setTextColor(...BODY);
         const km = motoInfo.kilometrage ?? first?.kilometrage ?? 0;
         doc.text(`Kilométrage actuel : ${Number(km).toLocaleString("fr-FR")} km`, MARGIN, y);
         y += 9;
@@ -160,7 +174,7 @@ export async function exportMaintenanceToPdf(
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.setTextColor(...TEXT);
+      doc.setTextColor(...BODY);
       doc.text("Historique des entretiens", MARGIN, y);
       y += 6;
       doc.setDrawColor(...ORANGE);
@@ -177,7 +191,7 @@ export async function exportMaintenanceToPdf(
 
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...TEXT);
+        doc.setTextColor(...BODY);
         doc.text(formatEntretienType(e.type), MARGIN, y);
         y += 5;
 
@@ -188,7 +202,7 @@ export async function exportMaintenanceToPdf(
           y += 5;
         }
 
-        doc.setTextColor(...TEXT);
+        doc.setTextColor(...BODY);
         doc.text(
           `${new Date(e.date).toLocaleDateString("fr-FR")} · ${e.kilometrage.toLocaleString("fr-FR")} km`,
           MARGIN,
@@ -200,11 +214,11 @@ export async function exportMaintenanceToPdf(
           doc.setTextColor(...MUTED);
           doc.text(`Garage : ${e.garage}`, MARGIN, y);
           y += 5;
-          doc.setTextColor(...TEXT);
+          doc.setTextColor(...BODY);
         }
 
         if (e.note) {
-          doc.setTextColor(...TEXT);
+          doc.setTextColor(...BODY);
           const lines = doc.splitTextToSize(e.note, pageWidth - 2 * MARGIN);
           doc.text(lines, MARGIN, y);
           y += lines.length * 5 + 2;
@@ -226,19 +240,19 @@ export async function exportMaintenanceToPdf(
                 doc.setTextColor(...MUTED);
                 doc.text("Facture : voir document dans l’application", MARGIN, y);
                 y += 5;
-                doc.setTextColor(...TEXT);
+                doc.setTextColor(...BODY);
               }
             } catch {
               doc.setTextColor(...MUTED);
               doc.text("Facture : voir document dans l’application", MARGIN, y);
               y += 5;
-              doc.setTextColor(...TEXT);
+              doc.setTextColor(...BODY);
             }
           } else {
             doc.setTextColor(...MUTED);
             doc.text("Facture PDF disponible dans l’application", MARGIN, y);
             y += 5;
-            doc.setTextColor(...TEXT);
+            doc.setTextColor(...BODY);
           }
         }
 
