@@ -1,0 +1,62 @@
+diff --git a/node_modules/next-auth/core/routes/callback.js b/node_modules/next-auth/core/routes/callback.js
+index 04492e3..40fddb2 100644
+--- a/node_modules/next-auth/core/routes/callback.js
++++ b/node_modules/next-auth/core/routes/callback.js
+@@ -127,11 +127,8 @@ async function callback(params) {
+             ...jwt,
+             token
+           });
+-          const cookieExpires = new Date();
+-          cookieExpires.setTime(cookieExpires.getTime() + sessionMaxAge * 1000);
+-          const sessionCookies = sessionStore.chunk(newToken, {
+-            expires: cookieExpires
+-          });
++          // MotoMind (patch): cookie de session navigateur — sans Expires/Max-Age, supprimée à la fermeture du navigateur
++          const sessionCookies = sessionStore.chunk(newToken, {});
+           cookies.push(...sessionCookies);
+         } else {
+           cookies.push({
+@@ -276,11 +273,8 @@ async function callback(params) {
+           ...jwt,
+           token
+         });
+-        const cookieExpires = new Date();
+-        cookieExpires.setTime(cookieExpires.getTime() + sessionMaxAge * 1000);
+-        const sessionCookies = sessionStore.chunk(newToken, {
+-          expires: cookieExpires
+-        });
++        // MotoMind (patch): cookie de session navigateur
++        const sessionCookies = sessionStore.chunk(newToken, {});
+         cookies.push(...sessionCookies);
+       } else {
+         cookies.push({
+@@ -394,11 +388,8 @@ async function callback(params) {
+       ...jwt,
+       token
+     });
+-    const cookieExpires = new Date();
+-    cookieExpires.setTime(cookieExpires.getTime() + sessionMaxAge * 1000);
+-    const sessionCookies = sessionStore.chunk(newToken, {
+-      expires: cookieExpires
+-    });
++    // MotoMind (patch): cookie de session navigateur (credentials)
++    const sessionCookies = sessionStore.chunk(newToken, {});
+     cookies.push(...sessionCookies);
+     await ((_events$signIn3 = events.signIn) === null || _events$signIn3 === void 0 ? void 0 : _events$signIn3.call(events, {
+       user,
+diff --git a/node_modules/next-auth/core/routes/session.js b/node_modules/next-auth/core/routes/session.js
+index d23383d..0dd6e08 100644
+--- a/node_modules/next-auth/core/routes/session.js
++++ b/node_modules/next-auth/core/routes/session.js
+@@ -75,9 +75,8 @@ async function session(params) {
+         token,
+         maxAge: options.session.maxAge
+       });
+-      const sessionCookies = sessionStore.chunk(newToken, {
+-        expires: newExpires
+-      });
++      // MotoMind (patch): ne pas réécrire Expires sur le cookie — reste une session navigateur
++      const sessionCookies = sessionStore.chunk(newToken, {});
+       (_response$cookies = response.cookies) === null || _response$cookies === void 0 || _response$cookies.push(...sessionCookies);
+       await ((_events$session = events.session) === null || _events$session === void 0 ? void 0 : _events$session.call(events, {
+         session: updatedSession,

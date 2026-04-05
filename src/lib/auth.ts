@@ -84,9 +84,16 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
     error: "/login",
   },
+  /**
+   * maxAge : durée max du JWT chiffré (renouvelé côté serveur tant que le cookie existe).
+   * Cookie de session : patch `patches/next-auth+4.24.13.patch` — pas de Max-Age/Expires sur le
+   * cookie `session-token`, donc il est supprimé à la fermeture du navigateur (onglets seuls :
+   * le cookie reste souvent actif tant que le navigateur est ouvert — comportement standard des
+   * navigateurs).
+   */
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 jours
+    maxAge: 30 * 24 * 60 * 60, // plafond JWT ; la déconnexion « fermeture app » = fin du cookie
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
