@@ -29,6 +29,15 @@ const TYPE_BY_MIME: Record<string, "image" | "pdf"> = {
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
+/** Vercel injecte `BLOB_READ_WRITE_TOKEN` ; alias accepté si tu as nommé la variable autrement sur Vercel. */
+function getInvoiceBlobToken(): string | undefined {
+  return (
+    process.env.BLOB_READ_WRITE_TOKEN ||
+    process.env.motomind_READ_WRITE_TOKEN ||
+    undefined
+  );
+}
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -79,11 +88,12 @@ export async function POST(req: Request) {
     );
   }
 
-  if (process.env.VERCEL === "1" && !process.env.BLOB_READ_WRITE_TOKEN) {
+  const blobToken = getInvoiceBlobToken();
+  if (process.env.VERCEL === "1" && !blobToken) {
     return NextResponse.json(
       {
         error:
-          "Stockage des factures non configuré : ajoutez Vercel Blob au projet et la variable BLOB_READ_WRITE_TOKEN (voir .env.example).",
+          "Stockage des factures non configuré : définissez BLOB_READ_WRITE_TOKEN (recommandé) ou motomind_READ_WRITE_TOKEN avec le token du Blob Store (voir .env.example).",
       },
       { status: 503 }
     );
@@ -97,10 +107,10 @@ export async function POST(req: Request) {
   try {
     let url: string;
 
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
+    if (blobToken) {
       const blob = await put(`invoices/${name}`, buffer, {
         access: "public",
-        token: process.env.BLOB_READ_WRITE_TOKEN,
+        token: blobToken,
         contentType: mime,
       });
       url = blob.url;
