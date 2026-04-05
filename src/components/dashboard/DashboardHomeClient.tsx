@@ -10,11 +10,7 @@ import ReminderChecker from "@/components/ReminderChecker";
 import PremiumBanner from "@/components/PremiumBanner";
 import ProchainsEntretiensCard from "@/components/ProchainsEntretiensCard";
 import WelcomeCard from "@/components/onboarding/WelcomeCard";
-import {
-  computeMaintenanceStatusItems,
-  plannedEntretiensToStatusItems,
-  mergeMaintenanceItems,
-} from "@/lib/maintenance-status";
+import { plannedEntretiensToStatusItems } from "@/lib/maintenance-status";
 import {
   getEntretienStatus,
   getStatusColor,
@@ -25,21 +21,6 @@ import {
 type HomePayload = {
   userName: string | null;
   motorcycleCount: number;
-  motosWithEntretiens: Array<{
-    id: string;
-    marque: string;
-    modele: string;
-    kilometrage: number;
-    entretiens: Array<{
-      type: string;
-      kilometrage: number;
-      date: string;
-      intervalleKm: number | null;
-      intervalleJours: number | null;
-      reminderMileageBefore: number;
-      reminderDaysBefore: number;
-    }>;
-  }>;
   recentMaintenance: Array<{
     id: string;
     type: string;
@@ -60,21 +41,6 @@ type HomePayload = {
   }>;
   plan: "FREE" | "PRO";
 };
-
-function normalizeMotosForCompute(
-  raw: HomePayload["motosWithEntretiens"]
-): Parameters<typeof computeMaintenanceStatusItems>[0] {
-  return raw.map((m) => ({
-    id: m.id,
-    marque: m.marque,
-    modele: m.modele,
-    kilometrage: m.kilometrage,
-    entretiens: m.entretiens.map((e) => ({
-      ...e,
-      date: new Date(e.date),
-    })),
-  }));
-}
 
 const swrOptions = {
   dedupingInterval: 60_000,
@@ -111,8 +77,8 @@ export default function DashboardHomeClient() {
     );
   }
 
-  const computedItems = computeMaintenanceStatusItems(normalizeMotosForCompute(data.motosWithEntretiens));
-  const plannedItems = plannedEntretiensToStatusItems(
+  /** Uniquement les fiches planifiées par l’utilisateur (pas les échéances dérivées du dernier entretien terminé). */
+  const maintenanceStatusItems = plannedEntretiensToStatusItems(
     data.plannedEntretiens.map((e) => ({
       id: e.id,
       motoId: e.motoId,
@@ -124,7 +90,6 @@ export default function DashboardHomeClient() {
       moto: e.moto,
     }))
   );
-  const maintenanceStatusItems = mergeMaintenanceItems(computedItems, plannedItems);
 
   return (
     <div className="p-4 md:p-6 space-y-6">

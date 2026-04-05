@@ -13,26 +13,8 @@ export async function GET() {
 
   const userId = session.user.id;
 
-  const [motorcyclesCount, motosWithEntretiens, recentMaintenance, plannedEntretiens, userPlan] =
-    await Promise.all([
+  const [motorcyclesCount, recentMaintenance, plannedEntretiens, userPlan] = await Promise.all([
       prisma.moto.count({ where: { userId, deletedAt: null } }),
-      prisma.moto.findMany({
-        where: { userId, deletedAt: null },
-        include: {
-          entretiens: {
-            where: { statut: "termine", deletedAt: null },
-            select: {
-              type: true,
-              kilometrage: true,
-              date: true,
-              intervalleKm: true,
-              intervalleJours: true,
-              reminderMileageBefore: true,
-              reminderDaysBefore: true,
-            },
-          },
-        },
-      }),
       prisma.entretien.findMany({
         where: { moto: { userId, deletedAt: null }, deletedAt: null },
         include: { moto: true },
@@ -59,7 +41,6 @@ export async function GET() {
   return NextResponse.json({
     userName: session.user.name ?? null,
     motorcycleCount: motorcyclesCount,
-    motosWithEntretiens,
     recentMaintenance,
     plannedEntretiens,
     plan: userPlan?.plan === "PRO" ? "PRO" : "FREE",
