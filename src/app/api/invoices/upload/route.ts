@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "Stockage des factures non configuré : définissez BLOB_READ_WRITE_TOKEN (recommandé) ou motomind_READ_WRITE_TOKEN avec le token du Blob Store (voir .env.example).",
+          "Stockage des factures non configuré : définis BLOB_READ_WRITE_TOKEN (recommandé) ou motomind_READ_WRITE_TOKEN avec le token du Blob Store (voir .env.example).",
       },
       { status: 503 }
     );

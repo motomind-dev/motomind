@@ -571,7 +571,7 @@ export async function sendNewLoginAlertEmail(
     const { error } = await resend.emails.send({
       from: resendFromAddress(),
       to: userEmail,
-      subject: "Nouvelle connexion détectée sur votre compte MotoMind",
+      subject: "Nouvelle connexion détectée sur ton compte MotoMind",
       html,
       text,
       ...(resendReplyTo() ? { replyTo: resendReplyTo() } : {}),
@@ -623,7 +623,7 @@ export async function sendFailedLoginsAlertEmail(
     const { error } = await resend.emails.send({
       from: resendFromAddress(),
       to: userEmail,
-      subject: "Activité inhabituelle sur votre compte MotoMind",
+      subject: "Activité inhabituelle sur ton compte MotoMind",
       html,
       text,
       ...(resendReplyTo() ? { replyTo: resendReplyTo() } : {}),
@@ -711,7 +711,7 @@ export async function sendPasswordChangedConfirmEmail(
     const { error } = await resend.emails.send({
       from: resendFromAddress(),
       to: userEmail,
-      subject: "Votre mot de passe a été modifié - MotoMind",
+      subject: "Ton mot de passe a été modifié - MotoMind",
       html,
       text,
       ...(resendReplyTo() ? { replyTo: resendReplyTo() } : {}),

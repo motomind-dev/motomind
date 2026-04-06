@@ -98,7 +98,7 @@ export default function DashboardHomeClient() {
       {data.motorcycleCount === 0 && <WelcomeCard userName={data.userName} />}
       <div>
         <h1 className="text-2xl font-bold text-white mb-4">Tableau de bord</h1>
-        <p className="text-zinc-500">Vue d&apos;ensemble de vos motos et entretiens</p>
+        <p className="text-zinc-500">Vue d&apos;ensemble de tes motos et entretiens</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -116,7 +116,7 @@ export default function DashboardHomeClient() {
           <div className="space-y-4 flex flex-col min-h-0">
             <CardHeader
               title="Prochains entretiens"
-              subtitle="Vos maintenances à prévoir"
+              subtitle="Tes maintenances à prévoir"
               action={
                 <Button href="/entretiens/ajouter" variant="primary" size="sm">
                   Ajouter un entretien

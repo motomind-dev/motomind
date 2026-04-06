@@ -111,7 +111,7 @@ export default function EditMotoPage() {
           ← Retour aux motos
         </Link>
         <h1 className="text-2xl font-bold text-white">Modifier la moto</h1>
-        <p className="text-zinc-500 mt-1">Mettez à jour les informations de votre moto</p>
+        <p className="text-zinc-500 mt-1">Mets à jour les informations de ta moto</p>
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">

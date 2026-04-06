@@ -81,7 +81,7 @@ export default function AjouterEntretienPage() {
         setMotoId(motosList[0].id);
       }
     } catch {
-      setError("Impossible de charger vos motos / entretiens.");
+      setError("Impossible de charger tes motos / entretiens.");
     } finally {
       setLoading(false);
     }
@@ -105,7 +105,7 @@ export default function AjouterEntretienPage() {
       return;
     }
     if (status === "UPCOMING" && !nextDueDate && nextDueMileage === "") {
-      setError("Pour un entretien à venir, indiquez au moins la date prévue ou le kilométrage prévu.");
+      setError("Pour un entretien à venir, indique au moins la date prévue ou le kilométrage prévu.");
       return;
     }
 
@@ -205,7 +205,7 @@ export default function AjouterEntretienPage() {
         </Link>
         <h1 className="text-2xl font-bold text-white">Ajouter un entretien</h1>
         <p className="text-zinc-500 mt-1">
-          Enregistrez un entretien et retrouvez la liste ci-dessous.
+          Enregistre un entretien et retrouve la liste ci-dessous.
         </p>
       </div>
 
@@ -393,7 +393,7 @@ export default function AjouterEntretienPage() {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Vos entretiens</h2>
+        <h2 className="text-lg font-semibold text-white">Tes entretiens</h2>
 
         {loading ? (
           <p className="text-zinc-500">Chargement...</p>
@@ -503,7 +503,7 @@ export default function AjouterEntretienPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         title="Supprimer cet entretien"
-        message="L'entretien sera déplacé dans la corbeille. Vous pourrez le restaurer pendant 30 jours."
+        message="L'entretien sera déplacé dans la corbeille. Tu pourras le restaurer pendant 30 jours."
         confirmLabel="Supprimer"
         cancelLabel="Annuler"
         onConfirm={() => deleteTarget && handleDelete(deleteTarget)}

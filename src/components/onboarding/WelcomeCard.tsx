@@ -7,9 +7,9 @@ type Props = {
 };
 
 const STEPS = [
-  { label: "Ajoutez votre première moto", href: "/motorcycles/add" },
-  { label: "Enregistrez votre premier entretien", href: "/dashboard/entretiens" },
-  { label: "Consultez votre tableau de bord", href: "/dashboard" },
+  { label: "Ajoute ta première moto", href: "/motorcycles/add" },
+  { label: "Enregistre ton premier entretien", href: "/dashboard/entretiens" },
+  { label: "Consulte ton tableau de bord", href: "/dashboard" },
 ] as const;
 
 export default function WelcomeCard({ userName }: Props) {
@@ -30,9 +30,9 @@ export default function WelcomeCard({ userName }: Props) {
           </div>
 
           <p className="mt-4 text-zinc-300">
-            Votre carnet d&apos;entretien moto est prêt. Ici, vous pouvez
-            suivre vos entretiens, anticiper les prochaines révisions et garder
-            votre moto en parfaite condition pour la route.
+            Ton carnet d&apos;entretien moto est prêt. Ici, tu peux suivre tes
+            entretiens, anticiper les prochaines révisions et garder ta moto en
+            parfaite condition pour la route.
           </p>
 
           <div className="mt-4">
@@ -60,11 +60,11 @@ export default function WelcomeCard({ userName }: Props) {
           </div>
 
           <p className="mt-4 text-sm text-zinc-500">
-            Une fois configuré, votre carnet vous aidera à ne plus jamais
-            oublier une révision.
+            Une fois configuré, ton carnet t&apos;aidera à ne plus jamais oublier
+            une révision.
           </p>
           <p className="mt-2 text-sm text-zinc-500 italic">
-            Bonne route et profitez de chaque kilomètre.
+            Bonne route et profite de chaque kilomètre.
           </p>
         </div>
 

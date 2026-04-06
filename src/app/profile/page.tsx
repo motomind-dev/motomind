@@ -26,7 +26,7 @@ export default async function ProfilePage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white">Profil</h1>
-        <p className="text-zinc-500 mt-1">Gérez les informations de votre compte</p>
+        <p className="text-zinc-500 mt-1">Gère les informations de ton compte</p>
       </div>
 
       <ProfileForms initialUser={userProfile} />

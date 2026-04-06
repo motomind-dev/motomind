@@ -30,7 +30,7 @@ function loginErrorFeedback(code: string | null): {
   }
   return {
     variant: "error",
-    text: "Une erreur est survenue. Réessayez.",
+    text: "Une erreur est survenue. Réessaie.",
   };
 }
 
@@ -79,7 +79,7 @@ function LoginPageContent() {
           <Link href="/" className="text-3xl font-bold text-white">
             Moto<span className="text-moto-orange">Mind</span>
           </Link>
-          <p className="text-dark-500 mt-2">Connexion à votre compte</p>
+          <p className="text-dark-500 mt-2">Connexion à ton compte</p>
         </div>
 
         <form
@@ -88,7 +88,7 @@ function LoginPageContent() {
         >
           {resetSuccess && (
             <div className="mb-4 p-3 rounded-lg bg-emerald-500/20 text-emerald-400 text-sm">
-              Mot de passe mis à jour avec succès. Connectez-vous avec votre nouveau mot de passe.
+              Mot de passe mis à jour avec succès. Connecte-toi avec ton nouveau mot de passe.
             </div>
           )}
           {registeredSuccess && !resetSuccess && !verifiedSuccess && (
@@ -126,7 +126,7 @@ function LoginPageContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-moto-orange focus:border-transparent"
-                placeholder="vous@exemple.com"
+                placeholder="email@exemple.com"
               />
             </div>
             <div>

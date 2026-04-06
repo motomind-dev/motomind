@@ -20,7 +20,7 @@ function ResetPasswordForm() {
       <div className="min-h-screen flex items-center justify-center bg-dark-950 px-4">
         <div className="w-full max-w-md">
           <div className="bg-dark-900 border border-dark-700 rounded-xl p-6 shadow-xl text-center">
-            <p className="text-red-400 mb-4">Lien invalide. Veuillez demander un nouveau lien de réinitialisation.</p>
+            <p className="text-red-400 mb-4">Lien invalide. Demande un nouveau lien de réinitialisation.</p>
             <Link href="/reset-password-request" className="text-moto-orange hover:underline">
               Demander un nouveau lien
             </Link>
@@ -57,7 +57,7 @@ function ResetPasswordForm() {
       setSuccess(true);
       setTimeout(() => router.push("/login?reset=1"), 2000);
     } catch {
-      setError("Impossible de contacter le serveur. Vérifiez votre connexion.");
+      setError("Impossible de contacter le serveur. Vérifie ta connexion.");
     }
     setLoading(false);
   }

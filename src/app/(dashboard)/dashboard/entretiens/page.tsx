@@ -75,8 +75,8 @@ export default function EntretiensPage() {
   const pageTitle = filter === "upcoming" ? "Prochains entretiens" : "Tous les entretiens";
   const pageSubtitle =
     filter === "upcoming"
-      ? "Vos maintenances à prévoir"
-      : "Liste de vos entretiens de maintenance";
+      ? "Tes maintenances à prévoir"
+      : "Liste de tes entretiens de maintenance";
 
   if (error) {
     return (
@@ -202,7 +202,7 @@ export default function EntretiensPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         title="Supprimer cet entretien"
-        message="L'entretien sera déplacé dans la corbeille. Vous pourrez le restaurer pendant 30 jours."
+        message="L'entretien sera déplacé dans la corbeille. Tu pourras le restaurer pendant 30 jours."
         confirmLabel="Supprimer"
         cancelLabel="Annuler"
         onConfirm={() => deleteTarget && handleDelete(deleteTarget)}

@@ -52,7 +52,7 @@ export default function ProfileSecuritySection() {
         Sécurité du compte
       </h2>
       <p className="text-zinc-500 text-sm">
-        Dernières activités de sécurité sur votre compte
+        Dernières activités de sécurité sur ton compte
       </p>
 
       {loading ? (

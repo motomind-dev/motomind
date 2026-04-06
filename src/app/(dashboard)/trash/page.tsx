@@ -93,7 +93,7 @@ export default function TrashPage() {
   }
 
   async function handleForceDeleteEntretien(id: string) {
-    if (!confirm("Voulez-vous supprimer définitivement cet entretien ?")) return;
+    if (!confirm("Supprimer définitivement cet entretien ?")) return;
     setForceDeleting(id);
     try {
       const res = await fetch(`/api/entretiens/${id}/force`, { method: "DELETE" });
@@ -225,7 +225,7 @@ export default function TrashPage() {
                         {e.motoDeleted && (
                           <span className="text-orange-400">
                             {" "}
-                            · Restaurez d&apos;abord la moto
+                            · Restaure d&apos;abord la moto
                           </span>
                         )}
                       </p>

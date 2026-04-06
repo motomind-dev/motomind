@@ -28,7 +28,7 @@ export default function SignupPage() {
       try {
         data = await res.json();
       } catch {
-        data = { error: "Réponse invalide du serveur. Vérifiez que l'application est bien démarrée." };
+        data = { error: "Réponse invalide du serveur. Vérifie que l'application est bien démarrée." };
       }
 
       if (!res.ok) {
@@ -41,7 +41,7 @@ export default function SignupPage() {
       router.push("/login?registered=1");
       router.refresh();
     } catch (err) {
-      setError("Impossible de contacter le serveur. Vérifiez votre connexion.");
+      setError("Impossible de contacter le serveur. Vérifie ta connexion.");
       setLoading(false);
     }
   }
@@ -53,7 +53,7 @@ export default function SignupPage() {
           <Link href="/" className="text-3xl font-bold text-white">
             Moto<span className="text-moto-orange">Mind</span>
           </Link>
-          <p className="text-dark-500 mt-2">Créer votre compte</p>
+          <p className="text-dark-500 mt-2">Crée ton compte</p>
         </div>
 
         <form
@@ -91,7 +91,7 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-moto-orange focus:border-transparent"
-                placeholder="vous@exemple.com"
+                placeholder="email@exemple.com"
               />
             </div>
             <div>

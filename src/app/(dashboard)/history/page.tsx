@@ -371,7 +371,7 @@ export default function HistoryPage() {
           <p className="text-zinc-500">
             {entretiensTermines.length === 0
               ? "Aucun entretien terminé dans l'historique."
-              : "Aucun entretien ne correspond à vos critères."}
+              : "Aucun entretien ne correspond à tes critères."}
           </p>
         </div>
       ) : (

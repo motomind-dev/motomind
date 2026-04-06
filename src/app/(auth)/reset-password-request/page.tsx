@@ -32,7 +32,7 @@ export default function ResetPasswordRequestPage() {
 
       setSuccess(true);
     } catch {
-      setError("Impossible de contacter le serveur. Vérifiez votre connexion.");
+      setError("Impossible de contacter le serveur. Vérifie ta connexion.");
     }
     setLoading(false);
   }
@@ -58,15 +58,15 @@ export default function ResetPasswordRequestPage() {
           )}
           {success && (
             <div className="mb-4 p-3 rounded-lg bg-emerald-500/20 text-emerald-400 text-sm">
-              Si cet email est associé à un compte, vous recevrez un lien de réinitialisation.
-              Vérifiez votre boîte de réception.
+              Si cet email est associé à un compte, tu recevras un lien de réinitialisation.
+              Vérifie ta boîte de réception.
             </div>
           )}
 
           {!success && (
             <>
               <p className="text-gray-300 text-sm mb-4">
-                Entrez votre adresse email pour recevoir un lien de réinitialisation.
+                Saisis ton adresse e-mail pour recevoir un lien de réinitialisation.
               </p>
               <div className="space-y-4">
                 <div>
@@ -80,7 +80,7 @@ export default function ResetPasswordRequestPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className="w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-moto-orange focus:border-transparent"
-                    placeholder="vous@exemple.com"
+                    placeholder="email@exemple.com"
                   />
                 </div>
               </div>

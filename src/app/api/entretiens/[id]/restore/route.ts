@@ -27,7 +27,7 @@ export async function POST(
     }
     if (result.error === "moto_deleted") {
       return NextResponse.json(
-        { error: "Restaurez d'abord la moto associée" },
+        { error: "Restaure d'abord la moto associée" },
         { status: 400 }
       );
     }

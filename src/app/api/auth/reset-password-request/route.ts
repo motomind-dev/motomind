@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   const { allowed } = checkRateLimit("reset-password", ip);
   if (!allowed) {
     return NextResponse.json(
-      { error: "Trop de tentatives. Réessayez dans quelques minutes." },
+      { error: "Trop de tentatives. Réessaie dans quelques minutes." },
       { status: 429 }
     );
   }
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
       where: { email, token },
     });
     return NextResponse.json(
-      { error: "Impossible d'envoyer l'email. Réessayez plus tard." },
+      { error: "Impossible d'envoyer l'email. Réessaie plus tard." },
       { status: 500 }
     );
   }

@@ -78,7 +78,7 @@ export default function ReportProblemModal({ isOpen, onClose }: Props) {
 
         {success ? (
           <p className="text-zinc-300 py-4">
-            Merci, votre signalement a été envoyé.
+            Merci, ton signalement a été envoyé.
           </p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -97,7 +97,7 @@ export default function ReportProblemModal({ isOpen, onClose }: Props) {
                 required
                 minLength={10}
                 maxLength={2000}
-                placeholder="Décrivez le problème ou votre suggestion..."
+                placeholder="Décris le problème ou ta suggestion..."
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
               />
               <p className="text-xs text-zinc-500 mt-1">

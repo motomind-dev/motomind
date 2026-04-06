@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "MotoMind - Carnet d'entretien intelligent",
-  description: "Suivez les entretiens de votre moto, recevez des rappels et anticipez les révisions.",
+  description: "Suis les entretiens de ta moto, reçois des rappels et anticipe les révisions.",
 };
 
 export const viewport: Viewport = {

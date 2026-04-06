@@ -128,7 +128,7 @@ export default function MotosPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Mes motos</h1>
-          <p className="text-zinc-500 mt-1">Gérez vos motos</p>
+          <p className="text-zinc-500 mt-1">Gère tes motos</p>
         </div>
         <Button href="/motorcycles/add">+ Ajouter une moto</Button>
       </div>
@@ -234,7 +234,7 @@ export default function MotosPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         title="Supprimer la moto"
-        message="La moto et ses entretiens seront déplacés dans la corbeille. Vous pourrez les restaurer pendant 30 jours."
+        message="La moto et ses entretiens seront déplacés dans la corbeille. Tu pourras les restaurer pendant 30 jours."
         confirmLabel="Supprimer"
         cancelLabel="Annuler"
         onConfirm={() => deleteTarget && handleDelete(deleteTarget)}

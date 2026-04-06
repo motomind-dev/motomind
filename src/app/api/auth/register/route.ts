@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   const { allowed } = checkRateLimit("register", ip);
   if (!allowed) {
     return NextResponse.json(
-      { error: "Trop de tentatives. Réessayez dans quelques minutes." },
+      { error: "Trop de tentatives. Réessaie dans quelques minutes." },
       { status: 429 }
     );
   }
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     }
     if (prismaError?.code === "P1001" || prismaError?.code === "P1002") {
       return NextResponse.json(
-        { error: "Impossible de se connecter à la base de données. Vérifiez que la base est initialisée (npx prisma db push)." },
+        { error: "Impossible de se connecter à la base de données. Vérifie que la base est initialisée (npx prisma db push)." },
         { status: 503 }
       );
     }
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
       console.error("Register error:", error);
     }
     return NextResponse.json(
-      { error: "Une erreur est survenue lors de la création du compte. Réessayez." },
+      { error: "Une erreur est survenue lors de la création du compte. Réessaie." },
       { status: 500 }
     );
   }

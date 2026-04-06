@@ -101,7 +101,7 @@ function drawFooters(doc: import("jspdf").jsPDF, pageWidth: number, pageHeight: 
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...MUTED);
     doc.setFontSize(8);
-    doc.text("Le carnet numérique de votre moto · motomind.fr", MARGIN, footerY + 4.5);
+    doc.text("Le carnet numérique de ta moto · motomind.fr", MARGIN, footerY + 4.5);
 
     const pageLabel = `Page ${i} / ${total}`;
     doc.setTextColor(...MUTED);

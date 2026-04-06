@@ -50,7 +50,7 @@ export default function SecurityPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Sécurité du compte</h1>
         <p className="text-zinc-500 mt-1">
-          Dernières activités de sécurité sur votre compte
+          Dernières activités de sécurité sur ton compte
         </p>
       </div>
 

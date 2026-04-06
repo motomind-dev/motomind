@@ -91,7 +91,7 @@ export async function POST(req: Request) {
     const hasMileage = bodyNextDueMileage !== undefined && bodyNextDueMileage !== null && String(bodyNextDueMileage).trim() !== "";
     if (!hasDate && !hasMileage) {
       return NextResponse.json(
-        { error: "Pour un entretien à venir, indiquez au moins la date prévue ou le kilométrage prévu" },
+        { error: "Pour un entretien à venir, indique au moins la date prévue ou le kilométrage prévu" },
         { status: 400 }
       );
     }

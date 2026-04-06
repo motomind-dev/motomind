@@ -49,7 +49,7 @@ export const resetPasswordSchema = z
       .string()
       .min(MIN_PASSWORD_LENGTH, `Minimum ${MIN_PASSWORD_LENGTH} caractères`)
       .max(MAX_PASSWORD_LENGTH),
-    confirmPassword: z.string().min(1, "Confirmez le mot de passe"),
+    confirmPassword: z.string().min(1, "Confirme le mot de passe"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Les mots de passe ne correspondent pas",
