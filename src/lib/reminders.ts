@@ -109,6 +109,19 @@ async function checkPlannedEntretienReminders(
       continue;
     }
 
+    // Réserver la fiche avant l’envoi (évite les doublons si cron + dashboard en parallèle).
+    const claimed = await prisma.entretien.updateMany({
+      where: {
+        id: e.id,
+        reminderSent: false,
+        deletedAt: null,
+      },
+      data: { reminderSent: true },
+    });
+    if (claimed.count === 0) {
+      continue;
+    }
+
     const result = await sendPlannedEntretienReminderEmail(
       userEmail,
       {
@@ -123,13 +136,15 @@ async function checkPlannedEntretienReminders(
     );
 
     if (result.success) {
+      sent++;
+    } else {
       await prisma.entretien.update({
         where: { id: e.id },
-        data: { reminderSent: true },
+        data: { reminderSent: false },
       });
-      sent++;
-    } else if (result.error) {
-      errors.push(result.error);
+      if (result.error) {
+        errors.push(result.error);
+      }
     }
   }
 
@@ -164,6 +179,18 @@ async function checkPlannedEntretienOverdueByDateReminders(
       continue;
     }
 
+    const claimedLate = await prisma.entretien.updateMany({
+      where: {
+        id: e.id,
+        plannedLateReminderSent: false,
+        deletedAt: null,
+      },
+      data: { plannedLateReminderSent: true },
+    });
+    if (claimedLate.count === 0) {
+      continue;
+    }
+
     const result = await sendPlannedEntretienOverdueEmail(
       userEmail,
       {
@@ -178,13 +205,15 @@ async function checkPlannedEntretienOverdueByDateReminders(
     );
 
     if (result.success) {
+      sent++;
+    } else {
       await prisma.entretien.update({
         where: { id: e.id },
-        data: { plannedLateReminderSent: true },
+        data: { plannedLateReminderSent: false },
       });
-      sent++;
-    } else if (result.error) {
-      errors.push(result.error);
+      if (result.error) {
+        errors.push(result.error);
+      }
     }
   }
 
@@ -247,6 +276,17 @@ export async function checkMaintenanceReminders(
       if (status !== "SOON" && status !== "OVERDUE") continue;
       if (dernier.reminderSent) continue;
 
+      const claimedInterval = await prisma.entretien.updateMany({
+        where: {
+          id: dernier.id,
+          reminderSent: false,
+        },
+        data: { reminderSent: true },
+      });
+      if (claimedInterval.count === 0) {
+        continue;
+      }
+
       const result = await sendMaintenanceReminderEmail(
         user.email,
         {
@@ -259,14 +299,16 @@ export async function checkMaintenanceReminders(
         }
       );
 
-      if (result.success && dernier) {
+      if (result.success) {
+        sent++;
+      } else {
         await prisma.entretien.update({
           where: { id: dernier.id },
-          data: { reminderSent: true },
+          data: { reminderSent: false },
         });
-        sent++;
-      } else if (result.error) {
-        errors.push(result.error);
+        if (result.error) {
+          errors.push(result.error);
+        }
       }
     }
   }
