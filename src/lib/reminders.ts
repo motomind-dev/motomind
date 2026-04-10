@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { hasPremiumAccess } from "@/lib/plan-access";
 import { INTERVALLES_KM, getMaintenanceStatus } from "./utils";
 import {
   sendMaintenanceReminderEmail,
@@ -232,7 +233,7 @@ export async function checkMaintenanceReminders(
     where: { id: userId },
     select: { email: true, plan: true },
   });
-  if (!user?.email || user.plan !== "PRO") {
+  if (!user?.email || !hasPremiumAccess(user.plan)) {
     return { sent: 0, errors: [] };
   }
 

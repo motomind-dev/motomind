@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { effectivePlanLabel } from "@/lib/plan-access";
 import { INTERVALLES_KM } from "@/lib/utils";
 import { whereEntretienActive } from "@/lib/prisma-filters";
 
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
         select: { plan: true },
       }),
     ]);
-    const plan = user?.plan === "PRO" ? "PRO" : "FREE";
+    const plan = effectivePlanLabel(user?.plan);
     return NextResponse.json({ entretiens, plan });
   }
 

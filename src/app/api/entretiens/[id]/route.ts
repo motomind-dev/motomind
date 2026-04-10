@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { softDeleteEntretien } from "@/lib/services/soft-delete";
 import { whereEntretienActive } from "@/lib/prisma-filters";
+import { hasPremiumAccess } from "@/lib/plan-access";
 
 async function checkEntretienOwnership(id: string, userId: string) {
   const entretien = await prisma.entretien.findFirst({
@@ -50,7 +51,7 @@ export async function PATCH(
       where: { id: session.user.id },
       select: { plan: true },
     });
-    if (!user || user.plan !== "PRO") {
+    if (!user || !hasPremiumAccess(user.plan)) {
       return NextResponse.json(
         { error: "Fonctionnalité réservée aux abonnés Premium" },
         { status: 403 }

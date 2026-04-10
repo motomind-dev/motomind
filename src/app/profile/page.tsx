@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { effectivePlanLabel } from "@/lib/plan-access";
 import { authOptions } from "@/lib/auth";
 import ProfileForms from "./ProfileForms";
 import ProfileSecuritySection from "./ProfileSecuritySection";
@@ -31,7 +32,7 @@ export default async function ProfilePage() {
 
       <ProfileForms initialUser={userProfile} />
 
-      <ProfilePremiumSection plan={user.plan === "PRO" ? "PRO" : "FREE"} />
+      <ProfilePremiumSection plan={effectivePlanLabel(user.plan)} />
 
       <ProfileSecuritySection />
     </div>

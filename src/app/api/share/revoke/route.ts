@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hasPremiumAccess } from "@/lib/plan-access";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -13,7 +14,7 @@ export async function POST(req: Request) {
     where: { id: session.user.id },
     select: { plan: true },
   });
-  if (!user || user.plan !== "PRO") {
+  if (!user || !hasPremiumAccess(user.plan)) {
     return NextResponse.json(
       { error: "Fonctionnalité réservée aux abonnés Premium" },
       { status: 403 }

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createMotorcycleBodySchema } from "@/lib/validators/motorcycle";
 import { whereMotoActive } from "@/lib/prisma-filters";
+import { effectivePlanLabel, hasPremiumAccess } from "@/lib/plan-access";
 
 export const runtime = "nodejs";
 
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
     }),
   ]);
 
-  const plan = user?.plan === "PRO" ? "PRO" : "FREE";
+  const plan = effectivePlanLabel(user?.plan);
   const motoCount = user?._count.motos ?? 0;
   const canAddMoto = plan === "PRO" || motoCount < 1;
 
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
   }
 
-  if (user.plan === "FREE") {
+  if (!hasPremiumAccess(user.plan)) {
     const count = await prisma.moto.count({
       where: { userId: session.user.id, deletedAt: null },
     });

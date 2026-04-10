@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { effectivePlanLabel } from "@/lib/plan-access";
 import { whereMotoActive } from "@/lib/prisma-filters";
 
 export async function GET() {
@@ -18,7 +19,7 @@ export async function GET() {
     return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
   }
 
-  const plan = user.plan === "PRO" ? "PRO" : "FREE";
+  const plan = effectivePlanLabel(user.plan);
   const motoCount = await prisma.moto.count({
     where: whereMotoActive(session.user.id),
   });
