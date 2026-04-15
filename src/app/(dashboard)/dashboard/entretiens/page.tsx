@@ -22,6 +22,7 @@ type Entretien = {
   motoId: string;
   type: string;
   date: string;
+  createdAt?: string;
   kilometrage: number;
   note: string | null;
   statut?: string;
@@ -51,10 +52,17 @@ export default function EntretiensPage() {
   const loading = isLoading && !data;
 
   const filteredEntretiens = useMemo(() => {
-    if (filter === "upcoming") {
-      return entretiens.filter((e) => e.statut !== "termine");
-    }
-    return entretiens;
+    const list =
+      filter === "upcoming"
+        ? entretiens.filter((e) => e.statut !== "termine")
+        : entretiens;
+
+    return [...list].sort((a, b) => {
+      const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (aCreated !== bCreated) return bCreated - aCreated;
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
   }, [entretiens, filter]);
 
   async function handleDelete(id: string) {

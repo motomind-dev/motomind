@@ -29,6 +29,7 @@ type Entretien = {
   motoId: string;
   type: string;
   date: string;
+  createdAt?: string;
   kilometrage: number;
   statut?: string;
   nextDueDate?: string | null;
@@ -77,6 +78,15 @@ export default function AjouterEntretienPage() {
     motos.forEach((m) => map.set(m.id, `${m.marque} ${m.modele}`));
     return map;
   }, [motos]);
+
+  const sortedEntretiens = useMemo(() => {
+    return [...entretiens].sort((a, b) => {
+      const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (aCreated !== bCreated) return bCreated - aCreated;
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+  }, [entretiens]);
 
   async function loadFormData() {
     setLoadingForm(true);
@@ -483,13 +493,13 @@ export default function AjouterEntretienPage() {
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
             <p className="text-red-400 text-sm">Impossible de charger la liste des entretiens.</p>
           </div>
-        ) : entretiens.length === 0 ? (
+        ) : sortedEntretiens.length === 0 ? (
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
             <p className="text-zinc-500">Aucun entretien enregistré.</p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
-            {entretiens.map((e) => (
+            {sortedEntretiens.map((e) => (
               <div
                 key={e.id}
                 className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6"
