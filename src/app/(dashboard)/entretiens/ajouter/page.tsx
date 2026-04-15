@@ -45,9 +45,11 @@ export default function AjouterEntretienPage() {
   const isEditMode = Boolean(editId);
   const [motos, setMotos] = useState<Moto[]>([]);
   const [entretiens, setEntretiens] = useState<Entretien[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingForm, setLoadingForm] = useState(true);
+  const [loadingEntretiens, setLoadingEntretiens] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [entretiensError, setEntretiensError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const [plan, setPlan] = useState<"FREE" | "PRO" | null>(null);
@@ -66,25 +68,16 @@ export default function AjouterEntretienPage() {
     return map;
   }, [motos]);
 
-  async function load() {
-    setLoading(true);
+  async function loadFormData() {
+    setLoadingForm(true);
     setError(null);
     try {
-      const [motosRes, entretiensRes] = await Promise.all([
-        fetch("/api/motos?withAccount=1"),
-        fetch("/api/entretiens?withAccount=1"),
-      ]);
-
+      const motosRes = await fetch("/api/motos?withAccount=1");
       const motosJson = motosRes.ok ? await motosRes.json() : {};
-      const entretiensJson = entretiensRes.ok ? await entretiensRes.json() : {};
-
       const motosList = motosJson?.motos ?? (Array.isArray(motosJson) ? motosJson : []);
-      const entretiensList =
-        entretiensJson?.entretiens ?? (Array.isArray(entretiensJson) ? entretiensJson : []);
-      const planRaw = motosJson?.plan ?? entretiensJson?.plan ?? "FREE";
+      const planRaw = motosJson?.plan ?? "FREE";
 
       setMotos(motosList);
-      setEntretiens(entretiensList);
       setPlan(planRaw === "PRO" ? "PRO" : "FREE");
       setMotoId((current) => {
         if (current) return current;
@@ -93,7 +86,23 @@ export default function AjouterEntretienPage() {
         }
         return motosList[0]?.id ?? "";
       });
+    } catch {
+      setError("Impossible de charger tes motos.");
+      setPlan("FREE");
+    } finally {
+      setLoadingForm(false);
+    }
+  }
 
+  async function loadEntretiensData() {
+    setLoadingEntretiens(true);
+    setEntretiensError(null);
+    try {
+      const entretiensRes = await fetch("/api/entretiens?withAccount=1");
+      const entretiensJson = entretiensRes.ok ? await entretiensRes.json() : {};
+      const entretiensList =
+        entretiensJson?.entretiens ?? (Array.isArray(entretiensJson) ? entretiensJson : []);
+      setEntretiens(entretiensList);
       if (editId) {
         const found = entretiensList.find((e: Entretien) => e.id === editId);
         if (found) {
@@ -111,15 +120,15 @@ export default function AjouterEntretienPage() {
         }
       }
     } catch {
-      setError("Impossible de charger tes motos / entretiens.");
-      setPlan("FREE");
+      setEntretiensError("Impossible de charger la liste des entretiens.");
     } finally {
-      setLoading(false);
+      setLoadingEntretiens(false);
     }
   }
 
   useEffect(() => {
-    load();
+    void loadFormData();
+    void loadEntretiensData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId, requestedMotoId]);
 
@@ -287,7 +296,7 @@ export default function AjouterEntretienPage() {
                 value={motoId}
                 onChange={(e) => setMotoId(e.target.value)}
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                disabled={loading || isEditMode}
+                disabled={loadingForm || isEditMode}
               >
                 {motos.length === 0 ? (
                   <option value="">Aucune moto</option>
@@ -308,7 +317,7 @@ export default function AjouterEntretienPage() {
                 onChange={(e) => setType(e.target.value)}
                 placeholder="ex. vidange, pneus, freins..."
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                disabled={loading}
+                disabled={loadingForm}
               />
             </div>
 
@@ -350,7 +359,7 @@ export default function AjouterEntretienPage() {
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
                       className="mobile-date-input w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm md:text-base text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                      disabled={loading}
+                      disabled={loadingForm}
                     />
                     <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-zinc-500 md:hidden">
                       <svg
@@ -378,7 +387,7 @@ export default function AjouterEntretienPage() {
                     min={0}
                     placeholder="ex. 24500"
                     className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                    disabled={loading}
+                    disabled={loadingForm}
                   />
                 </div>
               </>
@@ -394,7 +403,7 @@ export default function AjouterEntretienPage() {
                       value={nextDueDate}
                       onChange={(e) => setNextDueDate(e.target.value)}
                       className="mobile-date-input w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm md:text-base text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                      disabled={loading}
+                      disabled={loadingForm}
                     />
                     <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-zinc-500 md:hidden">
                       <svg
@@ -422,7 +431,7 @@ export default function AjouterEntretienPage() {
                     min={0}
                     placeholder="ex. 30000"
                     className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                    disabled={loading}
+                    disabled={loadingForm}
                   />
                 </div>
               </>
@@ -442,7 +451,7 @@ export default function AjouterEntretienPage() {
                 accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
                 onChange={(e) => setInvoiceFile(e.target.files?.[0] ?? null)}
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-zinc-300 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-zinc-700 file:text-white"
-                disabled={loading}
+                disabled={loadingForm}
               />
             </div>
           ) : (
@@ -453,7 +462,7 @@ export default function AjouterEntretienPage() {
           )}
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={submitting || loading || motos.length === 0}>
+            <Button type="submit" disabled={submitting || loadingForm || motos.length === 0}>
               {submitting ? "Enregistrement..." : isEditMode ? "Mettre à jour" : "Enregistrer"}
             </Button>
           </div>
@@ -463,8 +472,12 @@ export default function AjouterEntretienPage() {
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-white">Tes entretiens</h2>
 
-        {loading ? (
+        {loadingEntretiens ? (
           <p className="text-zinc-500">Chargement...</p>
+        ) : entretiensError ? (
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+            <p className="text-red-400 text-sm">{entretiensError}</p>
+          </div>
         ) : entretiens.length === 0 ? (
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
             <p className="text-zinc-500">Aucun entretien enregistré.</p>
