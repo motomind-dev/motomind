@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { mutate as globalMutate } from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 import { Button } from "@/components/ui/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import TrashIcon from "@/components/TrashIcon";
@@ -16,6 +16,7 @@ import {
 import PremiumPaywall from "@/components/PremiumPaywall";
 import { SWR_KEYS } from "@/lib/dashboard-swr";
 import { revalidateDashboardCrudData } from "@/lib/dashboard-cache";
+import { jsonFetcher } from "@/lib/fetcher";
 
 type Moto = {
   id: string;
@@ -37,6 +38,10 @@ type Entretien = {
   invoiceType?: string | null;
 };
 
+type EntretiensPayload = { entretiens: Entretien[]; plan: string };
+
+const swrOpts = { dedupingInterval: 60_000, revalidateOnFocus: false };
+
 export default function AjouterEntretienPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,10 +51,8 @@ export default function AjouterEntretienPage() {
   const [motos, setMotos] = useState<Moto[]>([]);
   const [entretiens, setEntretiens] = useState<Entretien[]>([]);
   const [loadingForm, setLoadingForm] = useState(true);
-  const [loadingEntretiens, setLoadingEntretiens] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [entretiensError, setEntretiensError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const [plan, setPlan] = useState<"FREE" | "PRO" | null>(null);
@@ -61,6 +64,13 @@ export default function AjouterEntretienPage() {
   const [kilometrage, setKilometrage] = useState<number | "">("");
   const [nextDueDate, setNextDueDate] = useState("");
   const [nextDueMileage, setNextDueMileage] = useState<number | "">("");
+  const [didHydrateFromSWR, setDidHydrateFromSWR] = useState(false);
+
+  const {
+    data: entretiensData,
+    isLoading: isLoadingEntretiens,
+    error: entretiensFetchError,
+  } = useSWR<EntretiensPayload>(SWR_KEYS.entretiensPlan, jsonFetcher, swrOpts);
 
   const motoLabelById = useMemo(() => {
     const map = new Map<string, string>();
@@ -94,43 +104,38 @@ export default function AjouterEntretienPage() {
     }
   }
 
-  async function loadEntretiensData() {
-    setLoadingEntretiens(true);
-    setEntretiensError(null);
-    try {
-      const entretiensRes = await fetch("/api/entretiens?withAccount=1");
-      const entretiensJson = entretiensRes.ok ? await entretiensRes.json() : {};
-      const entretiensList =
-        entretiensJson?.entretiens ?? (Array.isArray(entretiensJson) ? entretiensJson : []);
-      setEntretiens(entretiensList);
-      if (editId) {
-        const found = entretiensList.find((e: Entretien) => e.id === editId);
-        if (found) {
-          setMotoId(found.motoId);
-          setType(found.type ?? "");
-          if (found.statut === "termine") {
-            setStatus("COMPLETED");
-            setDate(new Date(found.date).toISOString().slice(0, 10));
-            setKilometrage(found.kilometrage ?? "");
-          } else {
-            setStatus("UPCOMING");
-            setNextDueDate(found.nextDueDate ? new Date(found.nextDueDate).toISOString().slice(0, 10) : "");
-            setNextDueMileage(found.nextDueMileage ?? "");
-          }
-        }
-      }
-    } catch {
-      setEntretiensError("Impossible de charger la liste des entretiens.");
-    } finally {
-      setLoadingEntretiens(false);
-    }
-  }
-
   useEffect(() => {
     void loadFormData();
-    void loadEntretiensData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId, requestedMotoId]);
+
+  useEffect(() => {
+    if (!entretiensData?.entretiens) return;
+
+    setEntretiens(entretiensData.entretiens);
+
+    if (didHydrateFromSWR) return;
+    setDidHydrateFromSWR(true);
+
+    if (editId) {
+      const found = entretiensData.entretiens.find((e: Entretien) => e.id === editId);
+      if (found) {
+        setMotoId(found.motoId);
+        setType(found.type ?? "");
+        if (found.statut === "termine") {
+          setStatus("COMPLETED");
+          setDate(new Date(found.date).toISOString().slice(0, 10));
+          setKilometrage(found.kilometrage ?? "");
+        } else {
+          setStatus("UPCOMING");
+          setNextDueDate(
+            found.nextDueDate ? new Date(found.nextDueDate).toISOString().slice(0, 10) : ""
+          );
+          setNextDueMileage(found.nextDueMileage ?? "");
+        }
+      }
+    }
+  }, [didHydrateFromSWR, editId, entretiensData]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -472,11 +477,11 @@ export default function AjouterEntretienPage() {
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-white">Tes entretiens</h2>
 
-        {loadingEntretiens ? (
+        {isLoadingEntretiens && !entretiensData ? (
           <p className="text-zinc-500">Chargement...</p>
-        ) : entretiensError ? (
+        ) : entretiensFetchError ? (
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <p className="text-red-400 text-sm">{entretiensError}</p>
+            <p className="text-red-400 text-sm">Impossible de charger la liste des entretiens.</p>
           </div>
         ) : entretiens.length === 0 ? (
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
