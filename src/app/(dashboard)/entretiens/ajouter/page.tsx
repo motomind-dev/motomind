@@ -50,7 +50,7 @@ export default function AjouterEntretienPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-  const [plan, setPlan] = useState<"FREE" | "PRO">("FREE");
+  const [plan, setPlan] = useState<"FREE" | "PRO" | null>(null);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [motoId, setMotoId] = useState("");
   const [type, setType] = useState("");
@@ -112,6 +112,7 @@ export default function AjouterEntretienPage() {
       }
     } catch {
       setError("Impossible de charger tes motos / entretiens.");
+      setPlan("FREE");
     } finally {
       setLoading(false);
     }
@@ -428,7 +429,12 @@ export default function AjouterEntretienPage() {
             )}
           </div>
 
-          {plan === "PRO" ? (
+          {plan == null ? (
+            <div className="space-y-2" aria-busy="true">
+              <label className="text-sm text-zinc-400">Ajouter une facture (optionnel)</label>
+              <div className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-800/60 animate-pulse" />
+            </div>
+          ) : plan === "PRO" ? (
             <div className="space-y-2">
               <label className="text-sm text-zinc-400">Ajouter une facture (optionnel)</label>
               <input
