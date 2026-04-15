@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { mutate as globalMutate } from "swr";
 import { Button } from "@/components/ui/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import TrashIcon from "@/components/TrashIcon";
@@ -13,6 +14,8 @@ import {
   getStatusLabel,
 } from "@/lib/services/maintenance-status";
 import PremiumPaywall from "@/components/PremiumPaywall";
+import { SWR_KEYS } from "@/lib/dashboard-swr";
+import { revalidateDashboardCrudData } from "@/lib/dashboard-cache";
 
 type Moto = {
   id: string;
@@ -27,6 +30,8 @@ type Entretien = {
   date: string;
   kilometrage: number;
   statut?: string;
+  nextDueDate?: string | null;
+  nextDueMileage?: number | null;
   moto?: { marque: string; modele: string } | null;
   invoiceUrl?: string | null;
   invoiceType?: string | null;
@@ -34,6 +39,10 @@ type Entretien = {
 
 export default function AjouterEntretienPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedMotoId = searchParams.get("motoId");
+  const editId = searchParams.get("edit");
+  const isEditMode = Boolean(editId);
   const [motos, setMotos] = useState<Moto[]>([]);
   const [entretiens, setEntretiens] = useState<Entretien[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,8 +86,29 @@ export default function AjouterEntretienPage() {
       setMotos(motosList);
       setEntretiens(entretiensList);
       setPlan(planRaw === "PRO" ? "PRO" : "FREE");
-      if (!motoId && motosList.length > 0) {
-        setMotoId(motosList[0].id);
+      setMotoId((current) => {
+        if (current) return current;
+        if (requestedMotoId && motosList.some((m: Moto) => m.id === requestedMotoId)) {
+          return requestedMotoId;
+        }
+        return motosList[0]?.id ?? "";
+      });
+
+      if (editId) {
+        const found = entretiensList.find((e: Entretien) => e.id === editId);
+        if (found) {
+          setMotoId(found.motoId);
+          setType(found.type ?? "");
+          if (found.statut === "termine") {
+            setStatus("COMPLETED");
+            setDate(new Date(found.date).toISOString().slice(0, 10));
+            setKilometrage(found.kilometrage ?? "");
+          } else {
+            setStatus("UPCOMING");
+            setNextDueDate(found.nextDueDate ? new Date(found.nextDueDate).toISOString().slice(0, 10) : "");
+            setNextDueMileage(found.nextDueMileage ?? "");
+          }
+        }
       }
     } catch {
       setError("Impossible de charger tes motos / entretiens.");
@@ -90,7 +120,7 @@ export default function AjouterEntretienPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [editId, requestedMotoId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -151,8 +181,10 @@ export default function AjouterEntretienPage() {
         payload.invoiceType = invoiceType;
       }
 
-      const res = await fetch("/api/entretiens", {
-        method: "POST",
+      const endpoint = editId ? `/api/entretiens/${editId}` : "/api/entretiens";
+      const method = editId ? "PATCH" : "POST";
+      const res = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -163,10 +195,28 @@ export default function AjouterEntretienPage() {
         return;
       }
 
-      const created = (await res.json()) as Entretien;
-      setEntretiens((prev) => [created, ...prev]);
+      const saved = (await res.json()) as Entretien;
+      setEntretiens((prev) =>
+        editId ? prev.map((e) => (e.id === saved.id ? { ...e, ...saved } : e)) : [saved, ...prev]
+      );
+      await globalMutate(
+        SWR_KEYS.entretiensPlan,
+        (prev: { entretiens: Entretien[]; plan: string } | undefined) =>
+          prev
+            ? {
+                ...prev,
+                entretiens: editId
+                  ? prev.entretiens.map((e) => (e.id === saved.id ? { ...e, ...saved } : e))
+                  : [saved, ...prev.entretiens],
+              }
+            : prev,
+        { revalidate: false }
+      );
+      await revalidateDashboardCrudData();
       setType("");
       setKilometrage("");
+      setNextDueDate("");
+      setNextDueMileage("");
       setInvoiceFile(null);
       router.push("/dashboard/entretiens");
     } catch (err) {
@@ -187,7 +237,17 @@ export default function AjouterEntretienPage() {
       if (!res.ok) {
         setEntretiens(prev);
         setError("Suppression impossible.");
+        return;
       }
+      await globalMutate(
+        SWR_KEYS.entretiensPlan,
+        (cached: { entretiens: Entretien[]; plan: string } | undefined) =>
+          cached
+            ? { ...cached, entretiens: cached.entretiens.filter((e) => e.id !== id) }
+            : cached,
+        { revalidate: false }
+      );
+      await revalidateDashboardCrudData();
     } catch {
       setEntretiens(prev);
       setError("Suppression impossible.");
@@ -203,7 +263,9 @@ export default function AjouterEntretienPage() {
         >
           ← Retour
         </Link>
-        <h1 className="text-2xl font-bold text-white">Ajouter un entretien</h1>
+        <h1 className="text-2xl font-bold text-white">
+          {isEditMode ? "Modifier un entretien" : "Ajouter un entretien"}
+        </h1>
         <p className="text-zinc-500 mt-1">
           Enregistre un entretien et retrouve la liste ci-dessous.
         </p>
@@ -224,7 +286,7 @@ export default function AjouterEntretienPage() {
                 value={motoId}
                 onChange={(e) => setMotoId(e.target.value)}
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                disabled={loading}
+                disabled={loading || isEditMode}
               >
                 {motos.length === 0 ? (
                   <option value="">Aucune moto</option>
@@ -386,7 +448,7 @@ export default function AjouterEntretienPage() {
 
           <div className="flex justify-end">
             <Button type="submit" disabled={submitting || loading || motos.length === 0}>
-              {submitting ? "Enregistrement..." : "Enregistrer"}
+              {submitting ? "Enregistrement..." : isEditMode ? "Mettre à jour" : "Enregistrer"}
             </Button>
           </div>
         </form>

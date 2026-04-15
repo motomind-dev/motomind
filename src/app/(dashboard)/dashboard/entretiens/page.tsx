@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import useSWR, { mutate as globalMutate } from "swr";
+import useSWR from "swr";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { formatEntretienType } from "@/lib/utils";
 import { jsonFetcher } from "@/lib/fetcher";
 import { SWR_KEYS } from "@/lib/dashboard-swr";
+import { revalidateDashboardCrudData } from "@/lib/dashboard-cache";
 import {
   getEntretienStatus,
   getStatusColor,
@@ -66,8 +67,7 @@ export default function EntretiensPage() {
             : prev,
         { revalidate: false }
       );
-      void globalMutate(SWR_KEYS.home);
-      void globalMutate(SWR_KEYS.entretiensPlan);
+      await revalidateDashboardCrudData();
       setDeleteTarget(null);
     }
   }
@@ -176,6 +176,7 @@ export default function EntretiensPage() {
                         : prev,
                     { revalidate: false }
                   );
+                  void revalidateDashboardCrudData();
                 }}
               />
               <div className="mt-4 flex gap-2 justify-end">

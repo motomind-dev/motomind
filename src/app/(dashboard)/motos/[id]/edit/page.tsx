@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { mutate as globalMutate } from "swr";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { SWR_KEYS } from "@/lib/dashboard-swr";
+import { revalidateDashboardCrudData } from "@/lib/dashboard-cache";
 
 type Moto = {
   id: string;
@@ -66,8 +69,23 @@ export default function EditMotoPage() {
       return;
     }
 
+    await globalMutate(
+      SWR_KEYS.motosPlan,
+      (prev: {
+        motos: Moto[];
+        plan: string;
+        canAddMoto: boolean;
+      } | undefined) =>
+        prev
+          ? {
+              ...prev,
+              motos: prev.motos.map((m) => (m.id === id ? { ...m, ...data } : m)),
+            }
+          : prev,
+      { revalidate: false }
+    );
+    await revalidateDashboardCrudData();
     router.push("/motorcycles");
-    router.refresh();
   }
 
   const inputClass =

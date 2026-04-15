@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import MaintenanceStatusDot from "@/components/MaintenanceStatusDot";
 import type { MaintenanceStatusItem } from "@/lib/maintenance-status";
 import { getStatusColor, getStatusLabel } from "@/lib/services/maintenance-status";
+import { revalidateDashboardCrudData } from "@/lib/dashboard-cache";
 
 export default function ProchainsEntretiensCard({
   items,
@@ -33,7 +34,7 @@ export default function ProchainsEntretiensCard({
       }
       if (res.ok) {
         onComplete?.();
-        if (typeof window !== "undefined") window.location.reload();
+        await revalidateDashboardCrudData();
       } else {
         const err = await res.json().catch(() => ({}));
         console.error("Error completing maintenance:", err);

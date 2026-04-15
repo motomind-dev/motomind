@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import useSWR, { mutate as globalMutate } from "swr";
+import useSWR from "swr";
 import Link from "next/link";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import TrashIcon from "@/components/TrashIcon";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import PremiumPaywall from "@/components/PremiumPaywall";
 import { jsonFetcher } from "@/lib/fetcher";
 import { SWR_KEYS } from "@/lib/dashboard-swr";
+import { revalidateDashboardCrudData } from "@/lib/dashboard-cache";
 
 type Moto = {
   id: string;
@@ -108,8 +109,7 @@ export default function MotosPage() {
             : prev,
         { revalidate: false }
       );
-      void globalMutate(SWR_KEYS.home);
-      void globalMutate(SWR_KEYS.entretiensPlan);
+      await revalidateDashboardCrudData();
       setDeleteTarget(null);
     }
   }

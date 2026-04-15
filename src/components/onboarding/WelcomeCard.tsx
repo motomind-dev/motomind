@@ -75,9 +75,6 @@ export default function WelcomeCard({ userName }: Props) {
           <Button href="/dashboard/entretiens" variant="secondary" size="md">
             Planifier mon premier entretien
           </Button>
-          <Button href="/dashboard" variant="ghost" size="md">
-            Ouvrir mon tableau de bord
-          </Button>
         </div>
       </div>
     </Card>

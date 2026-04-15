@@ -2,9 +2,28 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { mutate as globalMutate } from "swr";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import PremiumPaywall from "@/components/PremiumPaywall";
+import { SWR_KEYS } from "@/lib/dashboard-swr";
+import { revalidateDashboardCrudData } from "@/lib/dashboard-cache";
+
+type Moto = {
+  id: string;
+  marque: string;
+  modele: string;
+  annee: number;
+  kilometrage: number;
+  photo: string | null;
+  shareToken?: string | null;
+};
+
+type MotosPayload = {
+  motos: Moto[];
+  plan: string;
+  canAddMoto: boolean;
+};
 
 export default function AddMotorcyclePage() {
   const router = useRouter();
@@ -41,8 +60,21 @@ export default function AddMotorcyclePage() {
       return;
     }
 
+    const createdMoto = data as Moto;
+    await globalMutate<MotosPayload>(
+      SWR_KEYS.motosPlan,
+      (prev) =>
+        prev
+          ? {
+              ...prev,
+              motos: [createdMoto, ...prev.motos],
+              canAddMoto: true,
+            }
+          : prev,
+      { revalidate: false }
+    );
+    await revalidateDashboardCrudData();
     router.push("/motorcycles");
-    router.refresh();
   }
 
   const inputClass =
