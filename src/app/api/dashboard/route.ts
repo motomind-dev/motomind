@@ -8,6 +8,7 @@ import {
   getEffectiveIntervalKmForCategory,
   getMergedIntervalKmForCategory,
   nextRevisionDueMileage,
+  shouldShowAutoRevisionPreconization,
 } from "@/lib/auto-revision-intervals";
 
 export async function GET() {
@@ -74,7 +75,11 @@ export async function GET() {
         km
       );
 
-      if (kmProchain > km && (!prochainKm || kmProchain < prochainKm)) {
+      if (
+        kmProchain > km &&
+        shouldShowAutoRevisionPreconization(motoCtx, kmProchain) &&
+        (!prochainKm || kmProchain < prochainKm)
+      ) {
         prochainKm = kmProchain;
         prochainDate = null; // Simplifié : on se base sur le km
         typeProchain = t;

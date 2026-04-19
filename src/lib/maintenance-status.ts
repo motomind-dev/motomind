@@ -4,6 +4,7 @@ import {
   getMergedIntervalKmForCategory,
   nextRevisionDueMileage,
   resolveIntervalleJoursForCategory,
+  shouldShowAutoRevisionPreconization,
 } from "./auto-revision-intervals";
 import { getRevisionIntervalRuleForMoto } from "./yamaha-revision-intervals";
 import {
@@ -119,6 +120,9 @@ export function computeMaintenanceStatusItems(
         intervalleKm,
         moto.kilometrage
       );
+      if (!shouldShowAutoRevisionPreconization(motoCtx, nextDueMileage)) {
+        continue;
+      }
       const nextDueDate =
         intervalleJours != null && intervalleJours > 0
           ? (() => {

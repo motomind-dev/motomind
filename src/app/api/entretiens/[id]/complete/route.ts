@@ -3,8 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
+  FIRST_UNIVERSAL_REVISION_KM,
   getEffectiveIntervalKmForCategory,
   getMergedIntervalKmForCategory,
+  hasRevisionPreconizationKmSource,
   nextRevisionDueMileage,
   resolveIntervalleJoursForCategory,
 } from "@/lib/auto-revision-intervals";
@@ -94,6 +96,16 @@ export async function PUT(
       intervalleKmResolved,
       newMotoKm
     );
+  }
+
+  if (
+    planNextRevisionKm &&
+    !hasRevisionPreconizationKmSource(motoCtx) &&
+    nextDueMileage != null &&
+    nextDueMileage !== FIRST_UNIVERSAL_REVISION_KM
+  ) {
+    nextDueMileage = null;
+    nextDueDate = null;
   }
 
   const [, updated] = await prisma.$transaction([

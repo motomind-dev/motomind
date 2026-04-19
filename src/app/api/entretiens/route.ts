@@ -4,8 +4,10 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { effectivePlanLabel } from "@/lib/plan-access";
 import {
+  FIRST_UNIVERSAL_REVISION_KM,
   getEffectiveIntervalKmForCategory,
   getMergedIntervalKmForCategory,
+  hasRevisionPreconizationKmSource,
   nextRevisionDueMileage,
   resolveIntervalleJoursForCategory,
 } from "@/lib/auto-revision-intervals";
@@ -200,6 +202,16 @@ export async function POST(req: Request) {
         intervalleKmResolved,
         newMotoKmForNext
       );
+    }
+
+    if (
+      planNextRevisionKm &&
+      !hasRevisionPreconizationKmSource(motoCtx) &&
+      nextDueMileage != null &&
+      nextDueMileage !== FIRST_UNIVERSAL_REVISION_KM
+    ) {
+      nextDueMileage = null;
+      nextDueDate = null;
     }
   }
 

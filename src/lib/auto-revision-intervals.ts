@@ -28,6 +28,18 @@ export function nextYamahaGridDueMileage(dernierKm: number, intervalKm: number):
 export const FIRST_UNIVERSAL_REVISION_KM = 1000;
 
 /**
+ * Préconisation « auto » affichée / rappel mail : **toute** la grille km seulement si Yamaha (carnet constructeur).
+ * Sinon (autres marques) : **uniquement** l’échéance des 1 000 km ; pas d’auto 10k / 20k / …
+ */
+export function shouldShowAutoRevisionPreconization(
+  moto: MotoIntervalContext,
+  nextDueMileage: number
+): boolean {
+  if (hasRevisionPreconizationKmSource(moto)) return true;
+  return nextDueMileage === FIRST_UNIVERSAL_REVISION_KM;
+}
+
+/**
  * Prochaine échéance révision : **1 000 km** tant qu’aucun passage n’est enregistré à ce palier,
  * puis paliers constructeur (`nextYamahaGridDueMileage` = multiples de l’intervalle).
  */

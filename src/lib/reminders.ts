@@ -5,6 +5,7 @@ import {
   getMergedIntervalKmForCategory,
   nextRevisionDueMileage,
   resolveIntervalleJoursForCategory,
+  shouldShowAutoRevisionPreconization,
 } from "./auto-revision-intervals";
 import { getMaintenanceStatus } from "./utils";
 import {
@@ -293,6 +294,9 @@ export async function checkMaintenanceReminders(
         intervalle,
         moto.kilometrage
       );
+      if (!shouldShowAutoRevisionPreconization(motoCtx, nextDueKm)) {
+        continue;
+      }
       const jours = resolveIntervalleJoursForCategory(
         type,
         dernier.intervalleJours,
