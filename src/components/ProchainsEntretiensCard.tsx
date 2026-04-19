@@ -65,23 +65,12 @@ export default function ProchainsEntretiensCard({
           {items.map((item) => {
             const key = `${item.motoId}-${item.type}`;
             const isLoading = loading === key;
-            const intervalConstructeur = item.constructorIntervalKm;
-            const showYamahaInterval =
-              !item.entretienId &&
-              intervalConstructeur != null &&
-              intervalConstructeur > 0;
-
-            // Préconisation Yamaha (AUTO) : paliers au compteur (10k, 20k, 30k…) + rythme constructeur
             const dueText =
-              showYamahaInterval &&
-              intervalConstructeur != null &&
               item.nextDueMileage != null
-                ? `${item.nextDueMileage.toLocaleString("fr-FR")} km au compteur · tous les ${intervalConstructeur.toLocaleString("fr-FR")} km`
-                : item.nextDueMileage != null
-                  ? `${item.nextDueMileage.toLocaleString("fr-FR")} km`
-                  : item.nextDueDate
-                    ? new Date(item.nextDueDate).toLocaleDateString("fr-FR")
-                    : "—";
+                ? `${item.nextDueMileage.toLocaleString("fr-FR")} km`
+                : item.nextDueDate
+                  ? new Date(item.nextDueDate).toLocaleDateString("fr-FR")
+                  : "—";
 
             return (
               <li
