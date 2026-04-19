@@ -41,8 +41,9 @@ export function resolveIntervalleJoursForCategory(
 
 /**
  * Intervalle km effectif pour la préconisation.
- * `revision_generale` : uniquement si une grille Yamaha s’applique ; `intervalleKm` sur la fiche terminée
- * ne compte que dans ce cas (sinon un ancien intervalle auto-rempli sur Honda ferait encore une ligne « Auto »).
+ * `revision_generale` : si une grille Yamaha s’applique, on utilise **toujours** l’intervalle constructeur
+ * (`rule.intervalKm`), pas `intervalleKm` sur la fiche terminée — une ancienne valeur (ex. 11 000) ne doit pas
+ * écraser 10 000 km. Sans grille Yamaha : pas de préconisation auto pour cette catégorie.
  * Autres catégories : intervalle enregistré puis défauts / env.
  */
 export function getEffectiveIntervalKmForCategory(
@@ -53,9 +54,6 @@ export function getEffectiveIntervalKmForCategory(
   if (category === "revision_generale") {
     const rule = getRevisionIntervalRuleForMoto(moto);
     if (rule != null) {
-      if (dernierIntervalleKm != null && dernierIntervalleKm > 0) {
-        return dernierIntervalleKm;
-      }
       return rule.intervalKm;
     }
     return null;
