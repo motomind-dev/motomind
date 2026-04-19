@@ -156,7 +156,7 @@ export default function DashboardHomeClient() {
           <div className="space-y-4 flex flex-col min-h-0">
             <CardHeader
               title="Prochains entretiens"
-              subtitle="Tes planifiés + rappels auto proches"
+              subtitle="Tes planifiés + rappels auto"
               action={
                 <Button href="/entretiens/ajouter" variant="primary" size="sm">
                   Ajouter un entretien
