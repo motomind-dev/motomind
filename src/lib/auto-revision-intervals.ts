@@ -40,21 +40,28 @@ export function resolveIntervalleJoursForCategory(
 }
 
 /**
- * Intervalle km effectif : priorité à l’entretien enregistré (`intervalleKm`).
- * `revision_generale` : grilles Yamaha uniquement (pas de clé env globale — elle s’appliquerait à toutes les marques).
- * Autres catégories : défauts génériques / env (hors préconisation dashboard, réservée à la révision).
+ * Intervalle km effectif pour la préconisation.
+ * `revision_generale` : uniquement si une grille Yamaha s’applique ; `intervalleKm` sur la fiche terminée
+ * ne compte que dans ce cas (sinon un ancien intervalle auto-rempli sur Honda ferait encore une ligne « Auto »).
+ * Autres catégories : intervalle enregistré puis défauts / env.
  */
 export function getEffectiveIntervalKmForCategory(
   category: string,
   moto: MotoIntervalContext,
   dernierIntervalleKm: number | null | undefined
 ): number | null {
-  if (dernierIntervalleKm != null && dernierIntervalleKm > 0) {
-    return dernierIntervalleKm;
-  }
   if (category === "revision_generale") {
     const rule = getRevisionIntervalRuleForMoto(moto);
-    return rule?.intervalKm ?? null;
+    if (rule != null) {
+      if (dernierIntervalleKm != null && dernierIntervalleKm > 0) {
+        return dernierIntervalleKm;
+      }
+      return rule.intervalKm;
+    }
+    return null;
+  }
+  if (dernierIntervalleKm != null && dernierIntervalleKm > 0) {
+    return dernierIntervalleKm;
   }
   return getMergedIntervalKmForCategory(category);
 }
