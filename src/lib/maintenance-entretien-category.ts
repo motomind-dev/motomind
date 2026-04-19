@@ -25,8 +25,9 @@ export function isAutoPrecomputedMaintenanceCategory(
 
 /** Première catégorie métier qui correspond au libellé stocké, ou null. */
 export function getMaintenanceCategoryForType(
-  storedType: string
+  storedType: string | null | undefined
 ): MaintenanceCategory | null {
+  if (storedType == null || String(storedType).trim() === "") return null;
   for (const c of MAINTENANCE_CATEGORIES) {
     if (entretienMatchesCategory(storedType, c)) return c;
   }
@@ -34,10 +35,13 @@ export function getMaintenanceCategoryForType(
 }
 
 export function entretienMatchesCategory(
-  storedType: string,
+  storedType: string | null | undefined,
   category: MaintenanceCategory
 ): boolean {
-  const t = storedType.trim().toLowerCase();
+  const t = String(storedType ?? "")
+    .trim()
+    .toLowerCase();
+  if (!t) return false;
   switch (category) {
     case "vidange":
       return (

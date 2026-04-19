@@ -29,6 +29,13 @@ type ProchainItemJson = {
   constructorIntervalKm: number | null;
 };
 
+function safeDateToIso(d: Date | null | undefined): string | null {
+  if (d == null) return null;
+  const ms = d.getTime();
+  if (Number.isNaN(ms)) return null;
+  return d.toISOString();
+}
+
 function serializeProchainsItems(
   items: ReturnType<typeof mergeMaintenanceItems>
 ): ProchainItemJson[] {
@@ -39,7 +46,7 @@ function serializeProchainsItems(
     typeLabel: item.typeLabel,
     status: item.status,
     nextDueMileage: item.nextDueMileage,
-    nextDueDate: item.nextDueDate?.toISOString() ?? null,
+    nextDueDate: safeDateToIso(item.nextDueDate),
     currentMileage: item.currentMileage,
     kmRemaining: item.kmRemaining,
     daysRemaining: item.daysRemaining,
@@ -90,50 +97,55 @@ export async function GET() {
     isPremiumAutoPreconizationEnabled() &&
     hasPremiumAccess(userPlan?.plan)
   ) {
-    const motosFull = await prisma.moto.findMany({
-      where: { userId, deletedAt: null },
-      include: {
-        entretiens: {
-          where: { statut: "termine", deletedAt: null },
-          orderBy: [{ kilometrage: "desc" }, { date: "desc" }],
+    try {
+      const motosFull = await prisma.moto.findMany({
+        where: { userId, deletedAt: null },
+        include: {
+          entretiens: {
+            where: { statut: "termine", deletedAt: null },
+            orderBy: [{ kilometrage: "desc" }, { date: "desc" }],
+          },
         },
-      },
-    });
+      });
 
-    const motosForCompute = motosFull.map((m) => ({
-      id: m.id,
-      marque: m.marque,
-      modele: m.modele,
-      annee: m.annee,
-      cylindreeCm3: m.cylindreeCm3 ?? null,
-      kilometrage: m.kilometrage,
-      entretiens: m.entretiens.map((e) => ({
+      const motosForCompute = motosFull.map((m) => ({
+        id: m.id,
+        marque: m.marque,
+        modele: m.modele,
+        annee: m.annee,
+        cylindreeCm3: m.cylindreeCm3 ?? null,
+        kilometrage: m.kilometrage,
+        entretiens: m.entretiens.map((e) => ({
+          type: e.type,
+          kilometrage: e.kilometrage,
+          date: e.date,
+          intervalleKm: e.intervalleKm,
+          intervalleJours: e.intervalleJours,
+          reminderMileageBefore: e.reminderMileageBefore,
+          reminderDaysBefore: e.reminderDaysBefore,
+        })),
+      }));
+
+      const computed = computeMaintenanceStatusItems(motosForCompute);
+
+      const planned: PlannedEntretien[] = plannedEntretiens.map((e) => ({
+        id: e.id,
+        motoId: e.motoId,
         type: e.type,
-        kilometrage: e.kilometrage,
-        date: e.date,
-        intervalleKm: e.intervalleKm,
-        intervalleJours: e.intervalleJours,
+        nextDueDate: e.nextDueDate,
+        nextDueMileage: e.nextDueMileage,
         reminderMileageBefore: e.reminderMileageBefore,
         reminderDaysBefore: e.reminderDaysBefore,
-      })),
-    }));
+        moto: e.moto,
+      }));
 
-    const computed = computeMaintenanceStatusItems(motosForCompute);
-
-    const planned: PlannedEntretien[] = plannedEntretiens.map((e) => ({
-      id: e.id,
-      motoId: e.motoId,
-      type: e.type,
-      nextDueDate: e.nextDueDate,
-      nextDueMileage: e.nextDueMileage,
-      reminderMileageBefore: e.reminderMileageBefore,
-      reminderDaysBefore: e.reminderDaysBefore,
-      moto: e.moto,
-    }));
-
-    const plannedItems = plannedEntretiensToStatusItems(planned);
-    const merged = mergeMaintenanceItems(computed, plannedItems);
-    prochainsMaintenanceItems = serializeProchainsItems(merged);
+      const plannedItems = plannedEntretiensToStatusItems(planned);
+      const merged = mergeMaintenanceItems(computed, plannedItems);
+      prochainsMaintenanceItems = serializeProchainsItems(merged);
+    } catch (err) {
+      console.error("[dashboard/home] prochainsMaintenanceItems", err);
+      prochainsMaintenanceItems = [];
+    }
   }
 
   return NextResponse.json({
