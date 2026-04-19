@@ -41,6 +41,22 @@ export function filterUpcomingItems(
   return items.filter((i) => i.status === "SOON" || i.status === "OVERDUE");
 }
 
+/**
+ * Carte dashboard « Prochains entretiens » :
+ * - Entretiens **planifiés manuellement** (`entretienId`) : toujours affichés (y compris « À venir »).
+ * - Préconisation **AUTO** sans fiche dédiée : seulement bientôt / en retard, pour ne pas saturer la carte.
+ */
+export function filterDashboardProchainsItems(
+  items: MaintenanceStatusItem[]
+): MaintenanceStatusItem[] {
+  return items.filter((i) => {
+    if (i.entretienId) {
+      return true;
+    }
+    return i.status === "SOON" || i.status === "OVERDUE";
+  });
+}
+
 type MotoWithEntretiens = {
   id: string;
   marque: string;

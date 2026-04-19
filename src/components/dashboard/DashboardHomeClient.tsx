@@ -12,7 +12,7 @@ import PremiumBanner from "@/components/PremiumBanner";
 import ProchainsEntretiensCard from "@/components/ProchainsEntretiensCard";
 import WelcomeCard from "@/components/onboarding/WelcomeCard";
 import {
-  filterUpcomingItems,
+  filterDashboardProchainsItems,
   plannedEntretiensToStatusItems,
   type MaintenanceStatusItem,
 } from "@/lib/maintenance-status";
@@ -74,7 +74,7 @@ export default function DashboardHomeClient() {
     swrOptions
   );
 
-  /** Uniquement SOON / OVERDUE : pas les échéances lointaines (« À venir »), pour que la carte se vide après « effectué » tant que la prochaine échéance est loin. */
+  /** Planifiés manuels : toujours visibles. Préconisations AUTO sans fiche : seulement bientôt / retard. */
   const maintenanceStatusItems = useMemo(() => {
     if (!data) return [];
     const raw =
@@ -105,7 +105,7 @@ export default function DashboardHomeClient() {
               moto: e.moto,
             }))
           );
-    return filterUpcomingItems(raw);
+    return filterDashboardProchainsItems(raw);
   }, [data]);
 
   if (error) {
@@ -156,7 +156,7 @@ export default function DashboardHomeClient() {
           <div className="space-y-4 flex flex-col min-h-0">
             <CardHeader
               title="Prochains entretiens"
-              subtitle="Bientôt ou en retard (pas les échéances lointaines)"
+              subtitle="Tes planifiés + rappels auto proches"
               action={
                 <Button href="/entretiens/ajouter" variant="primary" size="sm">
                   Ajouter un entretien
