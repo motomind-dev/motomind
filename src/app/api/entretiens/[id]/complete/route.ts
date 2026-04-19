@@ -4,8 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   getEffectiveIntervalKmForCategory,
-  hasRevisionPreconizationKmSource,
-  nextYamahaGridDueMileage,
+  getMergedIntervalKmForCategory,
+  nextRevisionDueMileage,
   resolveIntervalleJoursForCategory,
 } from "@/lib/auto-revision-intervals";
 import {
@@ -53,16 +53,21 @@ export async function PUT(
   };
 
   const category = getMaintenanceCategoryForType(entretien.type);
-  const autoCompute =
-    isAutoPrecomputedMaintenanceCategory(category) &&
-    hasRevisionPreconizationKmSource(motoCtx);
+  const planNextRevisionKm =
+    category != null && isAutoPrecomputedMaintenanceCategory(category);
 
-  const intervalleKmResolved = autoCompute
+  let intervalleKmResolved = planNextRevisionKm
     ? getEffectiveIntervalKmForCategory("revision_generale", motoCtx, undefined)
     : null;
+  if (
+    planNextRevisionKm &&
+    (intervalleKmResolved == null || intervalleKmResolved <= 0)
+  ) {
+    intervalleKmResolved = getMergedIntervalKmForCategory("revision_generale");
+  }
 
   const intervalleJours =
-    autoCompute && category != null
+    planNextRevisionKm && category != null
       ? resolveIntervalleJoursForCategory(category, undefined, motoCtx)
       : null;
 
@@ -71,10 +76,12 @@ export async function PUT(
     entretien
   );
 
+  const newMotoKm = Math.max(entretien.moto.kilometrage, kmRevision);
+
   let nextDueDate: Date | null = null;
   let nextDueMileage: number | null = null;
   if (
-    autoCompute &&
+    planNextRevisionKm &&
     intervalleKmResolved != null &&
     intervalleKmResolved > 0
   ) {
@@ -82,13 +89,12 @@ export async function PUT(
       nextDueDate = new Date(now);
       nextDueDate.setDate(nextDueDate.getDate() + intervalleJours);
     }
-    nextDueMileage = nextYamahaGridDueMileage(
+    nextDueMileage = nextRevisionDueMileage(
       kmRevision,
-      intervalleKmResolved
+      intervalleKmResolved,
+      newMotoKm
     );
   }
-
-  const newMotoKm = Math.max(entretien.moto.kilometrage, kmRevision);
 
   const [, updated] = await prisma.$transaction([
     prisma.moto.update({
@@ -103,8 +109,8 @@ export async function PUT(
         kilometrage: kmRevision,
         nextDueDate,
         nextDueMileage,
-        intervalleKm: autoCompute ? intervalleKmResolved : null,
-        intervalleJours: autoCompute ? intervalleJours : null,
+        intervalleKm: planNextRevisionKm ? intervalleKmResolved : null,
+        intervalleJours: planNextRevisionKm ? intervalleJours : null,
       },
     }),
   ]);

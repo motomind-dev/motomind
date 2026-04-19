@@ -6,8 +6,8 @@ import { getEtatMoto } from "@/lib/utils";
 import { entretienMatchesCategory } from "@/lib/maintenance-entretien-category";
 import {
   getEffectiveIntervalKmForCategory,
-  hasRevisionPreconizationKmSource,
-  nextYamahaGridDueMileage,
+  getMergedIntervalKmForCategory,
+  nextRevisionDueMileage,
 } from "@/lib/auto-revision-intervals";
 
 export async function GET() {
@@ -50,26 +50,29 @@ export async function GET() {
       const dernier = motoPrincipale.entretiens.find((e) =>
         entretienMatchesCategory(e.type, t)
       );
-      if (!dernier) {
-        continue;
-      }
       const motoCtx = {
         marque: motoPrincipale.marque,
         modele: motoPrincipale.modele,
         annee: motoPrincipale.annee,
         cylindreeCm3: motoPrincipale.cylindreeCm3 ?? null,
       };
-      const intervalle = getEffectiveIntervalKmForCategory(
+      let intervalle = getEffectiveIntervalKmForCategory(
         t,
         motoCtx,
-        dernier.intervalleKm
+        dernier?.intervalleKm
       );
+      if (intervalle == null || intervalle <= 0) {
+        intervalle = getMergedIntervalKmForCategory("revision_generale");
+      }
       if (intervalle == null || intervalle <= 0) {
         continue;
       }
-      const kmProchain = hasRevisionPreconizationKmSource(motoCtx)
-        ? nextYamahaGridDueMileage(dernier.kilometrage, intervalle)
-        : dernier.kilometrage + intervalle;
+      const dernierKm = dernier?.kilometrage ?? 0;
+      const kmProchain = nextRevisionDueMileage(
+        dernierKm,
+        intervalle,
+        km
+      );
 
       if (kmProchain > km && (!prochainKm || kmProchain < prochainKm)) {
         prochainKm = kmProchain;

@@ -24,6 +24,32 @@ export function nextYamahaGridDueMileage(dernierKm: number, intervalKm: number):
   return Math.ceil((dernierKm + 1) / intervalKm) * intervalKm;
 }
 
+/** Première révision km (rodage) — avant la grille propre à chaque constructeur. */
+export const FIRST_UNIVERSAL_REVISION_KM = 1000;
+
+/**
+ * Prochaine échéance révision : **1 000 km** tant qu’aucun passage n’est enregistré à ce palier,
+ * puis paliers constructeur (`nextYamahaGridDueMileage` = multiples de l’intervalle).
+ */
+export function nextRevisionDueMileage(
+  dernierKm: number,
+  intervalKm: number,
+  motoKm: number
+): number {
+  if (intervalKm <= 0) return Math.max(dernierKm, motoKm);
+  const hasFirstServiceDone = dernierKm >= FIRST_UNIVERSAL_REVISION_KM;
+  if (!hasFirstServiceDone) {
+    if (motoKm < FIRST_UNIVERSAL_REVISION_KM) {
+      return FIRST_UNIVERSAL_REVISION_KM;
+    }
+    return nextYamahaGridDueMileage(
+      Math.max(dernierKm, motoKm),
+      intervalKm
+    );
+  }
+  return nextYamahaGridDueMileage(dernierKm, intervalKm);
+}
+
 /**
  * Jours entre deux passages : priorité à la valeur enregistrée sur l’entretien.
  * Pour `revision_generale`, 365 j seulement si une grille Yamaha s’applique au km.

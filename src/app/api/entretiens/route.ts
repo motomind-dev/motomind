@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { effectivePlanLabel } from "@/lib/plan-access";
 import {
   getEffectiveIntervalKmForCategory,
-  hasRevisionPreconizationKmSource,
+  getMergedIntervalKmForCategory,
+  nextRevisionDueMileage,
   resolveIntervalleJoursForCategory,
 } from "@/lib/auto-revision-intervals";
 import {
@@ -122,17 +123,23 @@ export async function POST(req: Request) {
   };
 
   const category = getMaintenanceCategoryForType(String(type));
-  const autoComputeNextFromCompletion =
-    isAutoPrecomputedMaintenanceCategory(category) &&
-    hasRevisionPreconizationKmSource(motoCtx);
+  const planNextRevisionKm =
+    !isUpcoming &&
+    category != null &&
+    isAutoPrecomputedMaintenanceCategory(category);
 
-  const intervalleKmResolved =
-    !isUpcoming && autoComputeNextFromCompletion
-      ? getEffectiveIntervalKmForCategory("revision_generale", motoCtx, undefined)
-      : null;
+  let intervalleKmResolved = planNextRevisionKm
+    ? getEffectiveIntervalKmForCategory("revision_generale", motoCtx, undefined)
+    : null;
+  if (
+    planNextRevisionKm &&
+    (intervalleKmResolved == null || intervalleKmResolved <= 0)
+  ) {
+    intervalleKmResolved = getMergedIntervalKmForCategory("revision_generale");
+  }
 
   const intervalleJours =
-    autoComputeNextFromCompletion && category != null
+    planNextRevisionKm && category != null
       ? resolveIntervalleJoursForCategory(category, undefined, motoCtx)
       : null;
 
@@ -179,7 +186,7 @@ export async function POST(req: Request) {
       : Math.max(moto.kilometrage, kmParsed);
 
     if (
-      autoComputeNextFromCompletion &&
+      planNextRevisionKm &&
       intervalleKmResolved != null &&
       intervalleKmResolved > 0
     ) {
@@ -187,7 +194,12 @@ export async function POST(req: Request) {
         nextDueDate = new Date(dateObj);
         nextDueDate.setDate(nextDueDate.getDate() + intervalleJours);
       }
-      nextDueMileage = km + intervalleKmResolved;
+      const newMotoKmForNext = Math.max(moto.kilometrage, km);
+      nextDueMileage = nextRevisionDueMileage(
+        km,
+        intervalleKmResolved,
+        newMotoKmForNext
+      );
     }
   }
 
@@ -210,10 +222,10 @@ export async function POST(req: Request) {
           note: note || null,
           cout: cout != null ? parseFloat(cout) : null,
           garage: garage || null,
-          nextDueDate: autoComputeNextFromCompletion ? nextDueDate : null,
-          nextDueMileage: autoComputeNextFromCompletion ? nextDueMileage : null,
-          intervalleKm: autoComputeNextFromCompletion ? intervalleKmResolved : null,
-          intervalleJours: autoComputeNextFromCompletion ? intervalleJours : null,
+          nextDueDate: planNextRevisionKm ? nextDueDate : null,
+          nextDueMileage: planNextRevisionKm ? nextDueMileage : null,
+          intervalleKm: planNextRevisionKm ? intervalleKmResolved : null,
+          intervalleJours: planNextRevisionKm ? intervalleJours : null,
           ...(invoiceUrl != null && invoiceType != null && {
             invoiceUrl: String(invoiceUrl),
             invoiceType: String(invoiceType),
@@ -240,12 +252,8 @@ export async function POST(req: Request) {
           cout: cout != null ? parseFloat(cout) : null,
           statut: statut || "termine",
           garage: garage || null,
-          intervalleKm: autoComputeNextFromCompletion
-            ? intervalleKmResolved
-            : null,
-          intervalleJours: autoComputeNextFromCompletion
-            ? intervalleJours
-            : null,
+          intervalleKm: planNextRevisionKm ? intervalleKmResolved : null,
+          intervalleJours: planNextRevisionKm ? intervalleJours : null,
           ...(nextDueMileage != null && { nextDueMileage }),
           ...(nextDueDate != null && { nextDueDate }),
           reminderMileageBefore: 500,

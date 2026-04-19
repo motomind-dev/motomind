@@ -1,8 +1,8 @@
 import { formatEntretienType } from "./utils";
 import {
   getEffectiveIntervalKmForCategory,
-  hasRevisionPreconizationKmSource,
-  nextYamahaGridDueMileage,
+  getMergedIntervalKmForCategory,
+  nextRevisionDueMileage,
   resolveIntervalleJoursForCategory,
 } from "./auto-revision-intervals";
 import { getRevisionIntervalRuleForMoto } from "./yamaha-revision-intervals";
@@ -84,12 +84,6 @@ export function computeMaintenanceStatusItems(
         });
       const dernier = derniers[0];
 
-      // Sans au moins un entretien terminé pour ce type, on n’invente pas d’échéance
-      // (évite les 5 lignes « à venir » fantômes sur une moto neuve dans le carnet).
-      if (!dernier) {
-        continue;
-      }
-
       const motoCtx = {
         marque: moto.marque,
         modele: moto.modele,
@@ -97,36 +91,46 @@ export function computeMaintenanceStatusItems(
         cylindreeCm3: moto.cylindreeCm3,
       };
 
-      const intervalleKm = getEffectiveIntervalKmForCategory(
+      let intervalleKm = getEffectiveIntervalKmForCategory(
         type,
         motoCtx,
-        dernier.intervalleKm
+        dernier?.intervalleKm
       );
+      if (
+        type === "revision_generale" &&
+        (intervalleKm == null || intervalleKm <= 0)
+      ) {
+        intervalleKm = getMergedIntervalKmForCategory("revision_generale");
+      }
       if (intervalleKm == null || intervalleKm <= 0) {
         continue;
       }
 
       const intervalleJours = resolveIntervalleJoursForCategory(
         type,
-        dernier.intervalleJours,
+        dernier?.intervalleJours,
         motoCtx
       );
 
-      const nextDueMileage =
-        type === "revision_generale" && hasRevisionPreconizationKmSource(motoCtx)
-          ? nextYamahaGridDueMileage(dernier.kilometrage, intervalleKm)
-          : dernier.kilometrage + intervalleKm;
+      const dernierKm = dernier?.kilometrage ?? 0;
+
+      const nextDueMileage = nextRevisionDueMileage(
+        dernierKm,
+        intervalleKm,
+        moto.kilometrage
+      );
       const nextDueDate =
         intervalleJours != null && intervalleJours > 0
           ? (() => {
-              const d = new Date(dernier.date);
+              const base = dernier ? new Date(dernier.date) : new Date();
+              const d = new Date(base);
               d.setDate(d.getDate() + intervalleJours);
               return d;
             })()
           : null;
 
-      const reminderMileageBefore = dernier.reminderMileageBefore ?? 500;
-      const reminderDaysBefore = dernier.reminderDaysBefore ?? 15;
+      const reminderMileageBefore = dernier?.reminderMileageBefore ?? 500;
+      const reminderDaysBefore = dernier?.reminderDaysBefore ?? 15;
 
       const status = computeMaintenanceDisplayStatus({
         isCompleted: false,

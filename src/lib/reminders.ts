@@ -2,8 +2,8 @@ import { prisma } from "./prisma";
 import { hasPremiumAccess } from "@/lib/plan-access";
 import {
   getEffectiveIntervalKmForCategory,
-  hasRevisionPreconizationKmSource,
-  nextYamahaGridDueMileage,
+  getMergedIntervalKmForCategory,
+  nextRevisionDueMileage,
   resolveIntervalleJoursForCategory,
 } from "./auto-revision-intervals";
 import { getMaintenanceStatus } from "./utils";
@@ -275,18 +275,24 @@ export async function checkMaintenanceReminders(
         cylindreeCm3: moto.cylindreeCm3 ?? null,
       };
 
-      const intervalle = getEffectiveIntervalKmForCategory(
+      let intervalle = getEffectiveIntervalKmForCategory(
         type,
         motoCtx,
         dernier.intervalleKm
       );
+      if (
+        type === "revision_generale" &&
+        (intervalle == null || intervalle <= 0)
+      ) {
+        intervalle = getMergedIntervalKmForCategory("revision_generale");
+      }
       if (intervalle == null || intervalle <= 0) continue;
 
-      const nextDueKm =
-        type === "revision_generale" &&
-        hasRevisionPreconizationKmSource(motoCtx)
-          ? nextYamahaGridDueMileage(dernier.kilometrage, intervalle)
-          : dernier.kilometrage + intervalle;
+      const nextDueKm = nextRevisionDueMileage(
+        dernier.kilometrage,
+        intervalle,
+        moto.kilometrage
+      );
       const jours = resolveIntervalleJoursForCategory(
         type,
         dernier.intervalleJours,
