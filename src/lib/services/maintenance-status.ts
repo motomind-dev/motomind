@@ -5,7 +5,8 @@
 
 export type MaintenanceDisplayStatus = "UPCOMING" | "SOON" | "OVERDUE" | "COMPLETED";
 
-const SOON_KM_THRESHOLD = 1000;
+/** Aligné sur `reminderMileageBefore` par défaut (500) et `getMaintenanceStatus`. */
+const SOON_KM_THRESHOLD = 500;
 const SOON_DAYS_THRESHOLD = 30;
 
 export type ComputeStatusOptions = {
@@ -17,50 +18,61 @@ export type ComputeStatusOptions = {
   reminderDaysBefore?: number;
 };
 
-function toMidnight(d: Date) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-
 /**
- * Status rules centralisées (cohérentes partout) :
- * 1. Si effectué → "Terminé" (COMPLETED)
- * 2. Sinon si la date prévue est passée → "En retard" (OVERDUE)
- * 3. Sinon si la date prévue est aujourd'hui → SOON (affiché comme « À venir », vert)
- * 4. Sinon → UPCOMING (« À venir »)
- *
- * Note : si la date prévue manque, on retombe sur la logique kilométrage.
+ * Statut d’échéance : **km ou date**, le premier critère atteint (comme les rappels / getMaintenanceStatus).
+ * Ainsi, si l’utilisateur met à jour le kilométrage de la moto et dépasse l’échéance km de la révision,
+ * le statut passe bien en retard même quand une date calendaire est encore dans le futur.
  */
 export function getEntretienStatus(options: {
   isCompleted?: boolean;
   currentMileage: number;
   nextDueMileage: number | null;
   nextDueDate: Date | null;
+  reminderMileageBefore?: number;
+  reminderDaysBefore?: number;
 }): MaintenanceDisplayStatus {
   const {
     isCompleted = false,
     currentMileage,
     nextDueMileage,
     nextDueDate,
+    reminderMileageBefore = SOON_KM_THRESHOLD,
+    reminderDaysBefore = SOON_DAYS_THRESHOLD,
   } = options;
 
   if (isCompleted) return "COMPLETED";
 
-  if (nextDueDate && !Number.isNaN(nextDueDate.getTime())) {
-    const today = toMidnight(new Date());
-    const due = toMidnight(nextDueDate);
+  const mileage = Number(currentMileage) || 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    if (due.getTime() < today.getTime()) return "OVERDUE";
-    if (due.getTime() === today.getTime()) return "SOON";
-    return "UPCOMING";
+  // En retard : km dépassé OU date atteinte / passée
+  if (
+    nextDueMileage != null &&
+    !Number.isNaN(Number(nextDueMileage)) &&
+    mileage >= Number(nextDueMileage)
+  ) {
+    return "OVERDUE";
+  }
+  if (nextDueDate && !Number.isNaN(nextDueDate.getTime())) {
+    const dueDate = new Date(nextDueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    if (today.getTime() >= dueDate.getTime()) return "OVERDUE";
   }
 
-  // Fallback kilométrage si la date prévue est absente.
-  if (nextDueMileage != null && !Number.isNaN(Number(nextDueMileage))) {
-    const mileage = Number(currentMileage) || 0;
-    const dueMileage = Number(nextDueMileage);
-    if (mileage >= dueMileage) return "OVERDUE";
+  // Bientôt : fenêtre km ou fenêtre date
+  if (
+    nextDueMileage != null &&
+    !Number.isNaN(Number(nextDueMileage)) &&
+    mileage >= Number(nextDueMileage) - reminderMileageBefore
+  ) {
+    return "SOON";
+  }
+  if (nextDueDate && !Number.isNaN(nextDueDate.getTime())) {
+    const reminderDate = new Date(nextDueDate);
+    reminderDate.setDate(reminderDate.getDate() - reminderDaysBefore);
+    reminderDate.setHours(0, 0, 0, 0);
+    if (today.getTime() >= reminderDate.getTime()) return "SOON";
   }
 
   return "UPCOMING";
@@ -82,16 +94,13 @@ export function computeMaintenanceDisplayStatus(
     reminderDaysBefore = SOON_DAYS_THRESHOLD,
   } = options;
 
-  // reminderMileageBefore / reminderDaysBefore sont conservés par compatibilité,
-  // mais la règle d'affichage se fait désormais sur la date (ou fallback km).
-  void reminderMileageBefore;
-  void reminderDaysBefore;
-
   return getEntretienStatus({
     isCompleted,
     currentMileage,
     nextDueMileage,
     nextDueDate,
+    reminderMileageBefore,
+    reminderDaysBefore,
   });
 }
 

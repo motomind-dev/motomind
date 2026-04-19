@@ -1,8 +1,8 @@
 import { prisma } from "./prisma";
 import { hasPremiumAccess } from "@/lib/plan-access";
 import {
-  DEFAULT_REVISION_INTERVALLE_JOURS,
   getEffectiveIntervalKmForCategory,
+  resolveIntervalleJoursForCategory,
 } from "./auto-revision-intervals";
 import { getMaintenanceStatus } from "./utils";
 import {
@@ -13,6 +13,7 @@ import {
 import {
   MAINTENANCE_CATEGORIES,
   entretienMatchesCategory,
+  isAutoPrecomputedMaintenanceCategory,
 } from "./maintenance-entretien-category";
 
 export {
@@ -256,6 +257,10 @@ export async function checkMaintenanceReminders(
 
   for (const moto of motos) {
     for (const type of MAINTENANCE_CATEGORIES) {
+      if (!isAutoPrecomputedMaintenanceCategory(type)) {
+        continue;
+      }
+
       const dernier = moto.entretiens.find((e) =>
         entretienMatchesCategory(e.type, type)
       );
@@ -271,14 +276,27 @@ export async function checkMaintenanceReminders(
         },
         dernier.intervalleKm
       );
+      if (intervalle == null || intervalle <= 0) continue;
+
       const nextDueKm = dernier.kilometrage + intervalle;
-      const jours =
-        dernier.intervalleJours ?? DEFAULT_REVISION_INTERVALLE_JOURS;
-      const nextDueDate = (() => {
-        const d = new Date(dernier.date);
-        d.setDate(d.getDate() + jours);
-        return d;
-      })();
+      const jours = resolveIntervalleJoursForCategory(
+        type,
+        dernier.intervalleJours,
+        {
+          marque: moto.marque,
+          modele: moto.modele,
+          annee: moto.annee,
+          cylindreeCm3: moto.cylindreeCm3 ?? null,
+        }
+      );
+      const nextDueDate =
+        jours != null && jours > 0
+          ? (() => {
+              const d = new Date(dernier.date);
+              d.setDate(d.getDate() + jours);
+              return d;
+            })()
+          : null;
       const status = getMaintenanceStatus(
         moto.kilometrage,
         nextDueKm,

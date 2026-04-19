@@ -3,7 +3,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { effectivePlanLabel } from "@/lib/plan-access";
-import { INTERVALLES_KM } from "@/lib/utils";
+import {
+  getEffectiveIntervalKmForCategory,
+  hasRevisionPreconizationKmSource,
+  resolveIntervalleJoursForCategory,
+} from "@/lib/auto-revision-intervals";
+import {
+  getMaintenanceCategoryForType,
+  isAutoPrecomputedMaintenanceCategory,
+} from "@/lib/maintenance-entretien-category";
 import { whereEntretienActive } from "@/lib/prisma-filters";
 
 export const runtime = "nodejs";
@@ -105,8 +113,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Moto non trouvée" }, { status: 404 });
   }
 
-  const intervalleKm = INTERVALLES_KM[type as keyof typeof INTERVALLES_KM] ?? 5000;
-  const intervalleJours = 365;
+  const motoCtx = {
+    marque: moto.marque,
+    modele: moto.modele,
+    annee: moto.annee,
+    cylindreeCm3: moto.cylindreeCm3 ?? null,
+  };
+
+  const category = getMaintenanceCategoryForType(String(type));
+  const autoComputeNextFromCompletion =
+    isAutoPrecomputedMaintenanceCategory(category) &&
+    hasRevisionPreconizationKmSource(motoCtx);
+
+  const intervalleKmResolved =
+    !isUpcoming && autoComputeNextFromCompletion
+      ? getEffectiveIntervalKmForCategory("revision_generale", motoCtx, undefined)
+      : null;
+
+  const intervalleJours =
+    autoComputeNextFromCompletion && category != null
+      ? resolveIntervalleJoursForCategory(category, undefined, motoCtx)
+      : null;
 
   let dateObj: Date;
   let km: number;
@@ -123,9 +150,17 @@ export async function POST(req: Request) {
   } else {
     dateObj = new Date(date);
     km = parseInt(String(kilometrage), 10);
-    nextDueDate = new Date(dateObj);
-    nextDueDate.setDate(nextDueDate.getDate() + intervalleJours);
-    nextDueMileage = km + intervalleKm;
+    if (
+      autoComputeNextFromCompletion &&
+      intervalleKmResolved != null &&
+      intervalleKmResolved > 0
+    ) {
+      if (intervalleJours != null && intervalleJours > 0) {
+        nextDueDate = new Date(dateObj);
+        nextDueDate.setDate(nextDueDate.getDate() + intervalleJours);
+      }
+      nextDueMileage = km + intervalleKmResolved;
+    }
   }
 
   if (!isUpcoming) {
@@ -149,9 +184,10 @@ export async function POST(req: Request) {
           note: note || null,
           cout: cout != null ? parseFloat(cout) : null,
           garage: garage || null,
-          nextDueDate,
-          nextDueMileage,
-          intervalleKm,
+          nextDueDate: autoComputeNextFromCompletion ? nextDueDate : null,
+          nextDueMileage: autoComputeNextFromCompletion ? nextDueMileage : null,
+          intervalleKm: autoComputeNextFromCompletion ? intervalleKmResolved : null,
+          intervalleJours: autoComputeNextFromCompletion ? intervalleJours : null,
           ...(invoiceUrl != null && invoiceType != null && { invoiceUrl: String(invoiceUrl), invoiceType: String(invoiceType) }),
         },
       });
@@ -169,7 +205,16 @@ export async function POST(req: Request) {
       cout: cout != null ? parseFloat(cout) : null,
       statut: isUpcoming ? "A_VENIR" : (statut || "termine"),
       garage: garage || null,
-      intervalleKm,
+      intervalleKm: isUpcoming
+        ? null
+        : autoComputeNextFromCompletion
+          ? intervalleKmResolved
+          : null,
+      intervalleJours: isUpcoming
+        ? null
+        : autoComputeNextFromCompletion
+          ? intervalleJours
+          : null,
       ...(nextDueMileage != null && { nextDueMileage }),
       ...(nextDueDate != null && { nextDueDate }),
       reminderMileageBefore: 500,

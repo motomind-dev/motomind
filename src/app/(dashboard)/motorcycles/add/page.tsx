@@ -196,7 +196,7 @@ export default function AddMotorcyclePage() {
               className={inputClass}
             />
             <p className="text-xs text-zinc-500 mt-1.5">
-              Améliore les préconisations de révision (ex. 125 → 6 000 km, &gt;125 → 10 000 km).
+              Révision auto : grilles Yamaha dans l’app, ou intervalle saisi / variable AUTO_REVISION_INTERVALLES_KM. Autres cas : planifier manuellement. Vidange, chaîne, pneus, freins : manuel.
             </p>
           </div>
           <div className="flex gap-3 pt-4">

@@ -1,7 +1,7 @@
 /**
- * Intervalles « forfait révision » Yamaha (km) d’après les grilles constructeur.
- * 125 cm³ : 6 000 km ; 320 cm³ et plus (hors 125) : 10 000 km en général.
- * La correspondance modèle permet d’affiner sans cylindrée renseignée.
+ * Intervalles km des grilles « forfait révision » Yamaha (données constructeur fournies).
+ * Si la moto n’est pas couverte (autre marque, Yamaha sans modèle/cylindrée reconnus) : null
+ * — aucune préconisation km inventée.
  */
 
 export type RevisionIntervalRule = {
@@ -35,7 +35,7 @@ function normalize(s: string): string {
   return s.trim().toLowerCase();
 }
 
-/** Intervalle km selon la cylindrée seule (toutes marques, hors Yamaha détaillé). */
+/** Intervalle km selon la cylindrée — réservé aux Yamaha (grilles constructeur). */
 function intervalFromDisplacement(cc: number): RevisionIntervalRule {
   if (cc > 0 && cc <= 125) return { intervalKm: INTERVAL_125 };
   if (cc > 125 && cc <= 800) return { intervalKm: INTERVAL_STANDARD };
@@ -45,23 +45,24 @@ function intervalFromDisplacement(cc: number): RevisionIntervalRule {
 }
 
 /**
- * Règle de révision pour une moto (préconisation « révision générale »).
- * Priorité : cylindrée renseignée → reconnaissance Yamaha par modèle → défaut 10 000 km.
+ * Règle km « révision générale » uniquement à partir des grilles Yamaha chargées dans l’app.
+ * Retourne null si aucune donnée constructeur applicable (pas de valeur par défaut arbitraire).
  */
 export function getRevisionIntervalRuleForMoto(input: {
   marque: string;
   modele: string;
   annee: number;
   cylindreeCm3: number | null | undefined;
-}): RevisionIntervalRule {
+}): RevisionIntervalRule | null {
   const m = normalize(input.marque);
   const model = normalize(input.modele);
+  const isYamaha = m.includes("yamaha");
 
-  if (input.cylindreeCm3 != null && input.cylindreeCm3 > 0) {
+  if (isYamaha && input.cylindreeCm3 != null && input.cylindreeCm3 > 0) {
     return intervalFromDisplacement(input.cylindreeCm3);
   }
 
-  if (m.includes("yamaha")) {
+  if (isYamaha) {
     const combined = `${model} ${input.annee}`;
     for (const rule of YAMAHA_MODEL_RULES) {
       if (rule.test.test(combined) || rule.test.test(model)) {
@@ -70,5 +71,5 @@ export function getRevisionIntervalRuleForMoto(input: {
     }
   }
 
-  return { intervalKm: INTERVAL_STANDARD };
+  return null;
 }

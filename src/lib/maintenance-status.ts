@@ -1,7 +1,7 @@
 import { formatEntretienType } from "./utils";
 import {
-  DEFAULT_REVISION_INTERVALLE_JOURS,
   getEffectiveIntervalKmForCategory,
+  resolveIntervalleJoursForCategory,
 } from "./auto-revision-intervals";
 import {
   computeMaintenanceDisplayStatus,
@@ -10,6 +10,7 @@ import {
 import {
   MAINTENANCE_CATEGORIES,
   entretienMatchesCategory,
+  isAutoPrecomputedMaintenanceCategory,
 } from "./maintenance-entretien-category";
 
 export type MaintenanceStatusItem = {
@@ -63,6 +64,10 @@ export function computeMaintenanceStatusItems(
     const motoName = `${moto.marque} ${moto.modele}`;
 
     for (const type of MAINTENANCE_CATEGORIES) {
+      if (!isAutoPrecomputedMaintenanceCategory(type)) {
+        continue;
+      }
+
       const derniers = moto.entretiens
         .filter((e) => entretienMatchesCategory(e.type, type))
         .sort((a, b) => b.kilometrage - a.kilometrage);
@@ -84,15 +89,30 @@ export function computeMaintenanceStatusItems(
         },
         dernier.intervalleKm
       );
-      const intervalleJours =
-        dernier.intervalleJours ?? DEFAULT_REVISION_INTERVALLE_JOURS;
+      if (intervalleKm == null || intervalleKm <= 0) {
+        continue;
+      }
+
+      const intervalleJours = resolveIntervalleJoursForCategory(
+        type,
+        dernier.intervalleJours,
+        {
+          marque: moto.marque,
+          modele: moto.modele,
+          annee: moto.annee,
+          cylindreeCm3: moto.cylindreeCm3,
+        }
+      );
 
       const nextDueMileage = dernier.kilometrage + intervalleKm;
-      const nextDueDate = (() => {
-        const d = new Date(dernier.date);
-        d.setDate(d.getDate() + intervalleJours);
-        return d;
-      })();
+      const nextDueDate =
+        intervalleJours != null && intervalleJours > 0
+          ? (() => {
+              const d = new Date(dernier.date);
+              d.setDate(d.getDate() + intervalleJours);
+              return d;
+            })()
+          : null;
 
       const reminderMileageBefore = dernier.reminderMileageBefore ?? 500;
       const reminderDaysBefore = dernier.reminderDaysBefore ?? 30;
@@ -107,9 +127,12 @@ export function computeMaintenanceStatusItems(
       });
 
       const kmRemaining = nextDueMileage - moto.kilometrage;
-      const daysRemaining = Math.ceil(
-        (nextDueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-      );
+      const daysRemaining =
+        nextDueDate != null
+          ? Math.ceil(
+              (nextDueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+            )
+          : null;
 
       items.push({
         motoId: moto.id,
@@ -121,7 +144,8 @@ export function computeMaintenanceStatusItems(
         nextDueDate,
         currentMileage: moto.kilometrage,
         kmRemaining: kmRemaining > 0 ? Math.round(kmRemaining) : null,
-        daysRemaining: daysRemaining > 0 ? daysRemaining : null,
+        daysRemaining:
+          daysRemaining != null && daysRemaining > 0 ? daysRemaining : null,
       });
     }
   }

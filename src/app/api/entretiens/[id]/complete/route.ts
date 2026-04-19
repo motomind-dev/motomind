@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { INTERVALLES_KM } from "@/lib/utils";
+import {
+  getEffectiveIntervalKmForCategory,
+  hasRevisionPreconizationKmSource,
+  resolveIntervalleJoursForCategory,
+} from "@/lib/auto-revision-intervals";
+import {
+  getMaintenanceCategoryForType,
+  isAutoPrecomputedMaintenanceCategory,
+} from "@/lib/maintenance-entretien-category";
 
 /**
  * Marque un entretien planifié comme effectué (mise à jour par ID).
@@ -35,10 +43,40 @@ export async function PUT(
   }
 
   const now = new Date();
-  const intervalleKm = INTERVALLES_KM[entretien.type as keyof typeof INTERVALLES_KM] ?? 5000;
-  const nextDueDate = new Date(now);
-  nextDueDate.setDate(nextDueDate.getDate() + 365);
-  const nextDueMileage = entretien.moto.kilometrage + intervalleKm;
+  const motoCtx = {
+    marque: entretien.moto.marque,
+    modele: entretien.moto.modele,
+    annee: entretien.moto.annee,
+    cylindreeCm3: entretien.moto.cylindreeCm3 ?? null,
+  };
+
+  const category = getMaintenanceCategoryForType(entretien.type);
+  const autoCompute =
+    isAutoPrecomputedMaintenanceCategory(category) &&
+    hasRevisionPreconizationKmSource(motoCtx);
+
+  const intervalleKmResolved = autoCompute
+    ? getEffectiveIntervalKmForCategory("revision_generale", motoCtx, undefined)
+    : null;
+
+  const intervalleJours =
+    autoCompute && category != null
+      ? resolveIntervalleJoursForCategory(category, undefined, motoCtx)
+      : null;
+
+  let nextDueDate: Date | null = null;
+  let nextDueMileage: number | null = null;
+  if (
+    autoCompute &&
+    intervalleKmResolved != null &&
+    intervalleKmResolved > 0
+  ) {
+    if (intervalleJours != null && intervalleJours > 0) {
+      nextDueDate = new Date(now);
+      nextDueDate.setDate(nextDueDate.getDate() + intervalleJours);
+    }
+    nextDueMileage = entretien.moto.kilometrage + intervalleKmResolved;
+  }
 
   const updated = await prisma.entretien.update({
     where: { id },
@@ -48,6 +86,8 @@ export async function PUT(
       kilometrage: entretien.moto.kilometrage,
       nextDueDate,
       nextDueMileage,
+      intervalleKm: autoCompute ? intervalleKmResolved : null,
+      intervalleJours: autoCompute ? intervalleJours : null,
     },
   });
 

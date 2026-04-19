@@ -1,9 +1,6 @@
 import { INTERVALLES_KM } from "./utils";
 import { getRevisionIntervalRuleForMoto } from "./yamaha-revision-intervals";
 
-/** Période par défaut entre deux révisions « calendaires » (ex. révision annuelle). */
-export const DEFAULT_REVISION_INTERVALLE_JOURS = 365;
-
 export type MotoIntervalContext = {
   marque: string;
   modele: string;
@@ -11,20 +8,57 @@ export type MotoIntervalContext = {
   cylindreeCm3: number | null;
 };
 
+/** Rappel annuel type carnet Yamaha (uniquement si une source de préconisation km existe). */
+export const DEFAULT_REVISION_INTERVALLE_JOURS = 365;
+
+export function hasRevisionPreconizationKmSource(moto: MotoIntervalContext): boolean {
+  const fromEnv = parseAutoRevisionIntervalsFromEnv()["revision_generale"];
+  if (fromEnv != null && fromEnv > 0) return true;
+  return getRevisionIntervalRuleForMoto(moto) != null;
+}
+
 /**
- * Intervalle km effectif pour une catégorie : priorité à l’entretien enregistré,
- * puis règle « révision générale » (Yamaha / cylindrée), sinon défauts par type.
+ * Jours entre deux passages : priorité à la valeur enregistrée sur l’entretien.
+ * Pour `revision_generale`, 365 j seulement si une source constructeur (ou env) existe pour le km.
+ */
+export function resolveIntervalleJoursForCategory(
+  category: string,
+  intervalleJoursFromEntretien: number | null | undefined,
+  moto?: MotoIntervalContext | null
+): number | null {
+  if (
+    intervalleJoursFromEntretien != null &&
+    intervalleJoursFromEntretien > 0
+  ) {
+    return intervalleJoursFromEntretien;
+  }
+  if (category === "revision_generale") {
+    if (moto && hasRevisionPreconizationKmSource(moto)) {
+      return DEFAULT_REVISION_INTERVALLE_JOURS;
+    }
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Intervalle km effectif : priorité à l’entretien enregistré (`intervalleKm`).
+ * `revision_generale` : env `AUTO_REVISION_INTERVALLES_KM` ou grilles Yamaha ; sinon null (aucun défaut arbitraire).
+ * Autres catégories : défauts génériques / env (hors préconisation dashboard, réservée à la révision).
  */
 export function getEffectiveIntervalKmForCategory(
   category: string,
   moto: MotoIntervalContext,
   dernierIntervalleKm: number | null | undefined
-): number {
+): number | null {
   if (dernierIntervalleKm != null && dernierIntervalleKm > 0) {
     return dernierIntervalleKm;
   }
   if (category === "revision_generale") {
-    return getRevisionIntervalRuleForMoto(moto).intervalKm;
+    const fromEnv = parseAutoRevisionIntervalsFromEnv()["revision_generale"];
+    if (fromEnv != null && fromEnv > 0) return fromEnv;
+    const rule = getRevisionIntervalRuleForMoto(moto);
+    return rule?.intervalKm ?? null;
   }
   return getMergedIntervalKmForCategory(category);
 }

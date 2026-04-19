@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getEtatMoto, INTERVALLES_KM } from "@/lib/utils";
+import { getEtatMoto } from "@/lib/utils";
 import { entretienMatchesCategory } from "@/lib/maintenance-entretien-category";
+import { getEffectiveIntervalKmForCategory } from "@/lib/auto-revision-intervals";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -38,8 +39,8 @@ export async function GET() {
     let prochainDate: Date | null = null;
     let typeProchain = "";
 
-    // Pour chaque type d'entretien, trouver le dernier et calculer le prochain
-    const types = ["vidange", "chaine", "pneus", "freins", "revision_generale"] as const;
+    // Préconisation km auto : révision générale uniquement (le reste = planifié par l’utilisateur).
+    const types = ["revision_generale"] as const;
 
     for (const t of types) {
       const dernier = motoPrincipale.entretiens.find((e) =>
@@ -48,7 +49,19 @@ export async function GET() {
       if (!dernier) {
         continue;
       }
-      const intervalle = dernier.intervalleKm ?? INTERVALLES_KM[t] ?? 5000;
+      const intervalle = getEffectiveIntervalKmForCategory(
+        t,
+        {
+          marque: motoPrincipale.marque,
+          modele: motoPrincipale.modele,
+          annee: motoPrincipale.annee,
+          cylindreeCm3: motoPrincipale.cylindreeCm3 ?? null,
+        },
+        dernier.intervalleKm
+      );
+      if (intervalle == null || intervalle <= 0) {
+        continue;
+      }
       const kmProchain = dernier.kilometrage + intervalle;
 
       if (kmProchain > km && (!prochainKm || kmProchain < prochainKm)) {

@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { INTERVALLES_KM } from "@/lib/utils";
+import {
+  getEffectiveIntervalKmForCategory,
+  hasRevisionPreconizationKmSource,
+  resolveIntervalleJoursForCategory,
+} from "@/lib/auto-revision-intervals";
+import {
+  getMaintenanceCategoryForType,
+  isAutoPrecomputedMaintenanceCategory,
+} from "@/lib/maintenance-entretien-category";
 
 /**
  * Marque un entretien comme effectué en créant un nouvel enregistrement termine.
@@ -41,11 +49,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Type invalide" }, { status: 400 });
   }
 
-  const intervalleKm = INTERVALLES_KM[type] ?? 5000;
+  const motoCtx = {
+    marque: moto.marque,
+    modele: moto.modele,
+    annee: moto.annee,
+    cylindreeCm3: moto.cylindreeCm3 ?? null,
+  };
+
+  const category = getMaintenanceCategoryForType(type);
+  const autoCompute =
+    isAutoPrecomputedMaintenanceCategory(category) &&
+    hasRevisionPreconizationKmSource(motoCtx);
+
+  const intervalleKmResolved = autoCompute
+    ? getEffectiveIntervalKmForCategory("revision_generale", motoCtx, undefined)
+    : null;
+
+  const intervalleJours =
+    autoCompute && category != null
+      ? resolveIntervalleJoursForCategory(category, undefined, motoCtx)
+      : null;
+
   const now = new Date();
-  const nextDueDate = new Date(now);
-  nextDueDate.setDate(nextDueDate.getDate() + 365);
-  const nextDueMileage = moto.kilometrage + intervalleKm;
+  let nextDueDate: Date | null = null;
+  let nextDueMileage: number | null = null;
+  if (
+    autoCompute &&
+    intervalleKmResolved != null &&
+    intervalleKmResolved > 0
+  ) {
+    if (intervalleJours != null && intervalleJours > 0) {
+      nextDueDate = new Date(now);
+      nextDueDate.setDate(nextDueDate.getDate() + intervalleJours);
+    }
+    nextDueMileage = moto.kilometrage + intervalleKmResolved;
+  }
 
   const existingPlanned = await prisma.entretien.findFirst({
     where: {
@@ -66,6 +104,8 @@ export async function POST(req: Request) {
         kilometrage: moto.kilometrage,
         nextDueDate,
         nextDueMileage,
+        intervalleKm: autoCompute ? intervalleKmResolved : null,
+        intervalleJours: autoCompute ? intervalleJours : null,
       },
     });
     return NextResponse.json(entretien);
@@ -78,7 +118,8 @@ export async function POST(req: Request) {
       date: now,
       kilometrage: moto.kilometrage,
       statut: "termine",
-      intervalleKm,
+      intervalleKm: autoCompute ? intervalleKmResolved : null,
+      intervalleJours: autoCompute ? intervalleJours : null,
       nextDueMileage,
       nextDueDate,
       reminderMileageBefore: 500,
