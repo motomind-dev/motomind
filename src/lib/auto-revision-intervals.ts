@@ -12,14 +12,12 @@ export type MotoIntervalContext = {
 export const DEFAULT_REVISION_INTERVALLE_JOURS = 365;
 
 export function hasRevisionPreconizationKmSource(moto: MotoIntervalContext): boolean {
-  const fromEnv = parseAutoRevisionIntervalsFromEnv()["revision_generale"];
-  if (fromEnv != null && fromEnv > 0) return true;
   return getRevisionIntervalRuleForMoto(moto) != null;
 }
 
 /**
  * Jours entre deux passages : priorité à la valeur enregistrée sur l’entretien.
- * Pour `revision_generale`, 365 j seulement si une source constructeur (ou env) existe pour le km.
+ * Pour `revision_generale`, 365 j seulement si une grille Yamaha s’applique au km.
  */
 export function resolveIntervalleJoursForCategory(
   category: string,
@@ -43,7 +41,7 @@ export function resolveIntervalleJoursForCategory(
 
 /**
  * Intervalle km effectif : priorité à l’entretien enregistré (`intervalleKm`).
- * `revision_generale` : env `AUTO_REVISION_INTERVALLES_KM` ou grilles Yamaha ; sinon null (aucun défaut arbitraire).
+ * `revision_generale` : grilles Yamaha uniquement (pas de clé env globale — elle s’appliquerait à toutes les marques).
  * Autres catégories : défauts génériques / env (hors préconisation dashboard, réservée à la révision).
  */
 export function getEffectiveIntervalKmForCategory(
@@ -55,8 +53,6 @@ export function getEffectiveIntervalKmForCategory(
     return dernierIntervalleKm;
   }
   if (category === "revision_generale") {
-    const fromEnv = parseAutoRevisionIntervalsFromEnv()["revision_generale"];
-    if (fromEnv != null && fromEnv > 0) return fromEnv;
     const rule = getRevisionIntervalRuleForMoto(moto);
     return rule?.intervalKm ?? null;
   }
@@ -64,9 +60,10 @@ export function getEffectiveIntervalKmForCategory(
 }
 
 /**
- * Intervalles km optionnels via env (JSON), fusionnés avec `INTERVALLES_KM`.
- * Exemple dans `.env` :
- * AUTO_REVISION_INTERVALLES_KM={"vidange":5000,"chaine":3000,"pneus":10000,"freins":10000,"revision_generale":10000}
+ * Intervalles km optionnels via env (JSON), fusionnés avec `INTERVALLES_KM` pour les types hors révision.
+ * Ne pas inclure `revision_generale` : la clé est ignorée à la lecture (révision = grilles Yamaha uniquement).
+ * Exemple :
+ * AUTO_REVISION_INTERVALLES_KM={"vidange":5000,"chaine":3000,"pneus":10000,"freins":10000}
  */
 export function parseAutoRevisionIntervalsFromEnv(): Record<string, number> {
   const raw = process.env.AUTO_REVISION_INTERVALLES_KM;
@@ -75,6 +72,9 @@ export function parseAutoRevisionIntervalsFromEnv(): Record<string, number> {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     const out: Record<string, number> = {};
     for (const [k, v] of Object.entries(parsed)) {
+      if (k === "revision_generale") {
+        continue;
+      }
       if (typeof v === "number" && !Number.isNaN(v) && v > 0) {
         out[k] = Math.round(v);
       } else if (typeof v === "string" && /^\d+$/.test(v)) {

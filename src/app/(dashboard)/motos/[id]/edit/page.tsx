@@ -228,7 +228,7 @@ export default function EditMotoPage() {
               className={inputClass}
             />
             <p className="text-xs text-zinc-500 mt-1.5">
-              Révision auto : grilles Yamaha dans l’app, ou intervalle saisi / variable AUTO_REVISION_INTERVALLES_KM. Autres cas : planifier manuellement. Vidange, chaîne, pneus, freins : manuel.
+              Révision auto : grilles Yamaha dans l’app, ou intervalle km saisi sur un entretien terminé. Autres marques : planifier manuellement. Vidange, chaîne, pneus, freins : manuel.
             </p>
           </div>
           <div className="flex gap-3 pt-4">

@@ -10,6 +10,7 @@ import {
 import {
   MAINTENANCE_CATEGORIES,
   entretienMatchesCategory,
+  getMaintenanceCategoryForType,
   isAutoPrecomputedMaintenanceCategory,
 } from "./maintenance-entretien-category";
 
@@ -177,6 +178,8 @@ export function plannedEntretiensToStatusItems(
 ): MaintenanceStatusItem[] {
   const items: MaintenanceStatusItem[] = [];
   for (const e of planned) {
+    const typeCanonique =
+      getMaintenanceCategoryForType(e.type) ?? e.type.trim();
     const nextDueDate = e.nextDueDate ? new Date(e.nextDueDate) : null;
     const nextDueMileage = e.nextDueMileage ?? null;
     const currentMileage = e.moto?.kilometrage ?? 0;
@@ -201,8 +204,8 @@ export function plannedEntretiensToStatusItems(
     items.push({
       motoId: e.motoId,
       motoName: e.moto ? `${e.moto.marque} ${e.moto.modele}` : "Moto",
-      type: e.type,
-      typeLabel: formatEntretienType(e.type),
+      type: typeCanonique,
+      typeLabel: formatEntretienType(typeCanonique),
       status,
       nextDueMileage,
       nextDueDate,
