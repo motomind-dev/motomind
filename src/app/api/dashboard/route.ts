@@ -4,7 +4,11 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getEtatMoto } from "@/lib/utils";
 import { entretienMatchesCategory } from "@/lib/maintenance-entretien-category";
-import { getEffectiveIntervalKmForCategory } from "@/lib/auto-revision-intervals";
+import {
+  getEffectiveIntervalKmForCategory,
+  hasRevisionPreconizationKmSource,
+  nextYamahaGridDueMileage,
+} from "@/lib/auto-revision-intervals";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -49,20 +53,23 @@ export async function GET() {
       if (!dernier) {
         continue;
       }
+      const motoCtx = {
+        marque: motoPrincipale.marque,
+        modele: motoPrincipale.modele,
+        annee: motoPrincipale.annee,
+        cylindreeCm3: motoPrincipale.cylindreeCm3 ?? null,
+      };
       const intervalle = getEffectiveIntervalKmForCategory(
         t,
-        {
-          marque: motoPrincipale.marque,
-          modele: motoPrincipale.modele,
-          annee: motoPrincipale.annee,
-          cylindreeCm3: motoPrincipale.cylindreeCm3 ?? null,
-        },
+        motoCtx,
         dernier.intervalleKm
       );
       if (intervalle == null || intervalle <= 0) {
         continue;
       }
-      const kmProchain = dernier.kilometrage + intervalle;
+      const kmProchain = hasRevisionPreconizationKmSource(motoCtx)
+        ? nextYamahaGridDueMileage(dernier.kilometrage, intervalle)
+        : dernier.kilometrage + intervalle;
 
       if (kmProchain > km && (!prochainKm || kmProchain < prochainKm)) {
         prochainKm = kmProchain;

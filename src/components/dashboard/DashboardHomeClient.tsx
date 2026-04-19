@@ -12,7 +12,6 @@ import PremiumBanner from "@/components/PremiumBanner";
 import ProchainsEntretiensCard from "@/components/ProchainsEntretiensCard";
 import WelcomeCard from "@/components/onboarding/WelcomeCard";
 import {
-  filterDashboardProchainsItems,
   plannedEntretiensToStatusItems,
   type MaintenanceStatusItem,
 } from "@/lib/maintenance-status";
@@ -74,38 +73,36 @@ export default function DashboardHomeClient() {
     swrOptions
   );
 
-  /** Planifiés manuels : toujours visibles. Préconisations AUTO sans fiche : seulement bientôt / retard. */
   const maintenanceStatusItems = useMemo(() => {
     if (!data) return [];
-    const raw =
-      data.prochainsMaintenanceItems != null
-        ? data.prochainsMaintenanceItems.map((row) => ({
-            motoId: row.motoId,
-            motoName: row.motoName,
-            type: row.type,
-            typeLabel: row.typeLabel,
-            status: row.status,
-            nextDueMileage: row.nextDueMileage,
-            nextDueDate: row.nextDueDate ? new Date(row.nextDueDate) : null,
-            currentMileage: row.currentMileage,
-            kmRemaining: row.kmRemaining,
-            daysRemaining: row.daysRemaining,
-            entretienId: row.entretienId ?? undefined,
-            constructorIntervalKm: row.constructorIntervalKm ?? null,
-          }))
-        : plannedEntretiensToStatusItems(
-            data.plannedEntretiens.map((e) => ({
-              id: e.id,
-              motoId: e.motoId,
-              type: e.type,
-              nextDueDate: e.nextDueDate ? new Date(e.nextDueDate) : null,
-              nextDueMileage: e.nextDueMileage,
-              reminderMileageBefore: e.reminderMileageBefore,
-              reminderDaysBefore: e.reminderDaysBefore,
-              moto: e.moto,
-            }))
-          );
-    return filterDashboardProchainsItems(raw);
+    if (data.prochainsMaintenanceItems != null) {
+      return data.prochainsMaintenanceItems.map((row) => ({
+        motoId: row.motoId,
+        motoName: row.motoName,
+        type: row.type,
+        typeLabel: row.typeLabel,
+        status: row.status,
+        nextDueMileage: row.nextDueMileage,
+        nextDueDate: row.nextDueDate ? new Date(row.nextDueDate) : null,
+        currentMileage: row.currentMileage,
+        kmRemaining: row.kmRemaining,
+        daysRemaining: row.daysRemaining,
+        entretienId: row.entretienId ?? undefined,
+        constructorIntervalKm: row.constructorIntervalKm ?? null,
+      }));
+    }
+    return plannedEntretiensToStatusItems(
+      data.plannedEntretiens.map((e) => ({
+        id: e.id,
+        motoId: e.motoId,
+        type: e.type,
+        nextDueDate: e.nextDueDate ? new Date(e.nextDueDate) : null,
+        nextDueMileage: e.nextDueMileage,
+        reminderMileageBefore: e.reminderMileageBefore,
+        reminderDaysBefore: e.reminderDaysBefore,
+        moto: e.moto,
+      }))
+    );
   }, [data]);
 
   if (error) {

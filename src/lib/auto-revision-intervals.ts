@@ -16,6 +16,15 @@ export function hasRevisionPreconizationKmSource(moto: MotoIntervalContext): boo
 }
 
 /**
+ * Prochain palier au compteur aligné sur la grille Yamaha (6k, 12k… ou 10k, 20k, 30k…).
+ * Ex. dernier passage 1 500 km → prochaine échéance **10 000 km** ; après passage à 10 000 km → **20 000 km**.
+ */
+export function nextYamahaGridDueMileage(dernierKm: number, intervalKm: number): number {
+  if (intervalKm <= 0) return dernierKm;
+  return Math.ceil((dernierKm + 1) / intervalKm) * intervalKm;
+}
+
+/**
  * Jours entre deux passages : priorité à la valeur enregistrée sur l’entretien.
  * Pour `revision_generale`, 365 j seulement si une grille Yamaha s’applique au km.
  */

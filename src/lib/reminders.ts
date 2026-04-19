@@ -2,6 +2,8 @@ import { prisma } from "./prisma";
 import { hasPremiumAccess } from "@/lib/plan-access";
 import {
   getEffectiveIntervalKmForCategory,
+  hasRevisionPreconizationKmSource,
+  nextYamahaGridDueMileage,
   resolveIntervalleJoursForCategory,
 } from "./auto-revision-intervals";
 import { getMaintenanceStatus } from "./utils";
@@ -266,28 +268,29 @@ export async function checkMaintenanceReminders(
       );
       if (!dernier) continue;
 
+      const motoCtx = {
+        marque: moto.marque,
+        modele: moto.modele,
+        annee: moto.annee,
+        cylindreeCm3: moto.cylindreeCm3 ?? null,
+      };
+
       const intervalle = getEffectiveIntervalKmForCategory(
         type,
-        {
-          marque: moto.marque,
-          modele: moto.modele,
-          annee: moto.annee,
-          cylindreeCm3: moto.cylindreeCm3 ?? null,
-        },
+        motoCtx,
         dernier.intervalleKm
       );
       if (intervalle == null || intervalle <= 0) continue;
 
-      const nextDueKm = dernier.kilometrage + intervalle;
+      const nextDueKm =
+        type === "revision_generale" &&
+        hasRevisionPreconizationKmSource(motoCtx)
+          ? nextYamahaGridDueMileage(dernier.kilometrage, intervalle)
+          : dernier.kilometrage + intervalle;
       const jours = resolveIntervalleJoursForCategory(
         type,
         dernier.intervalleJours,
-        {
-          marque: moto.marque,
-          modele: moto.modele,
-          annee: moto.annee,
-          cylindreeCm3: moto.cylindreeCm3 ?? null,
-        }
+        motoCtx
       );
       const nextDueDate =
         jours != null && jours > 0

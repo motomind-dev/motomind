@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import {
   getEffectiveIntervalKmForCategory,
   hasRevisionPreconizationKmSource,
+  nextYamahaGridDueMileage,
   resolveIntervalleJoursForCategory,
 } from "@/lib/auto-revision-intervals";
 import {
@@ -83,7 +84,10 @@ export async function POST(req: Request) {
       nextDueDate = new Date(now);
       nextDueDate.setDate(nextDueDate.getDate() + intervalleJours);
     }
-    nextDueMileage = moto.kilometrage + intervalleKmResolved;
+    nextDueMileage = nextYamahaGridDueMileage(
+      moto.kilometrage,
+      intervalleKmResolved
+    );
   }
 
   const categoryForMatch = getMaintenanceCategoryForType(type);

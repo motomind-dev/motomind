@@ -59,10 +59,7 @@ export default function ProchainsEntretiensCard({
         </p>
       )}
       {items.length === 0 ? (
-        <p className="text-zinc-500 text-sm">
-          Aucune échéance proche pour l’instant (bientôt ou en retard). Tu seras alerté quand tu
-          t’approcheras du kilométrage ou de la date prévue.
-        </p>
+        <p className="text-zinc-500 text-sm">Aucun entretien à prévoir pour l’instant.</p>
       ) : (
         <ul className="space-y-4">
           {items.map((item) => {
@@ -74,21 +71,17 @@ export default function ProchainsEntretiensCard({
               intervalConstructeur != null &&
               intervalConstructeur > 0;
 
-            // Préconisation Yamaha (AUTO) : uniquement l’intervalle grille (6k / 10k), pas le km absolu au compteur
-            // (dernier passage + 10k → ex. 11 500 km, ce qui prête à confusion avec « tous les 10 000 km »).
+            // Préconisation Yamaha (AUTO) : paliers au compteur (10k, 20k, 30k…) + rythme constructeur
             const dueText =
-              showYamahaInterval && intervalConstructeur != null
-                ? `tous les ${intervalConstructeur.toLocaleString("fr-FR")} km`
+              showYamahaInterval &&
+              intervalConstructeur != null &&
+              item.nextDueMileage != null
+                ? `${item.nextDueMileage.toLocaleString("fr-FR")} km au compteur · tous les ${intervalConstructeur.toLocaleString("fr-FR")} km`
                 : item.nextDueMileage != null
                   ? `${item.nextDueMileage.toLocaleString("fr-FR")} km`
                   : item.nextDueDate
                     ? new Date(item.nextDueDate).toLocaleDateString("fr-FR")
                     : "—";
-
-            const kmAvantEcheanceCompteur =
-              item.nextDueMileage != null
-                ? Math.round(item.nextDueMileage - item.currentMileage)
-                : null;
 
             return (
               <li
@@ -117,16 +110,6 @@ export default function ProchainsEntretiensCard({
                         <> · Dans {item.daysRemaining} jours</>
                       )}
                     </p>
-                    {showYamahaInterval && item.nextDueMileage != null && kmAvantEcheanceCompteur != null && (
-                      <p className="text-zinc-600 text-[11px] mt-1 leading-snug max-w-md">
-                        Prochaine échéance au compteur : {item.nextDueMileage.toLocaleString("fr-FR")} km (dernier passage +{" "}
-                        {intervalConstructeur?.toLocaleString("fr-FR")} km). Km restants :{" "}
-                        {kmAvantEcheanceCompteur > 0
-                          ? `${kmAvantEcheanceCompteur.toLocaleString("fr-FR")} km`
-                          : `${kmAvantEcheanceCompteur.toLocaleString("fr-FR")} km`}{" "}
-                        = échéance − km actuels.
-                      </p>
-                    )}
                     <span
                       className={`inline-block mt-1 text-xs px-1.5 py-0.5 rounded ${getStatusColor(item.status)}`}
                     >

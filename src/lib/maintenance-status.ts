@@ -1,6 +1,8 @@
 import { formatEntretienType } from "./utils";
 import {
   getEffectiveIntervalKmForCategory,
+  hasRevisionPreconizationKmSource,
+  nextYamahaGridDueMileage,
   resolveIntervalleJoursForCategory,
 } from "./auto-revision-intervals";
 import { getRevisionIntervalRuleForMoto } from "./yamaha-revision-intervals";
@@ -39,22 +41,6 @@ export function filterUpcomingItems(
 ): MaintenanceStatusItem[] {
   if (includeOk) return items;
   return items.filter((i) => i.status === "SOON" || i.status === "OVERDUE");
-}
-
-/**
- * Carte dashboard « Prochains entretiens » :
- * - Entretiens **planifiés manuellement** (`entretienId`) : toujours affichés (y compris « À venir »).
- * - Préconisation **AUTO** sans fiche dédiée : seulement bientôt / en retard, pour ne pas saturer la carte.
- */
-export function filterDashboardProchainsItems(
-  items: MaintenanceStatusItem[]
-): MaintenanceStatusItem[] {
-  return items.filter((i) => {
-    if (i.entretienId) {
-      return true;
-    }
-    return i.status === "SOON" || i.status === "OVERDUE";
-  });
 }
 
 type MotoWithEntretiens = {
@@ -104,14 +90,16 @@ export function computeMaintenanceStatusItems(
         continue;
       }
 
+      const motoCtx = {
+        marque: moto.marque,
+        modele: moto.modele,
+        annee: moto.annee,
+        cylindreeCm3: moto.cylindreeCm3,
+      };
+
       const intervalleKm = getEffectiveIntervalKmForCategory(
         type,
-        {
-          marque: moto.marque,
-          modele: moto.modele,
-          annee: moto.annee,
-          cylindreeCm3: moto.cylindreeCm3,
-        },
+        motoCtx,
         dernier.intervalleKm
       );
       if (intervalleKm == null || intervalleKm <= 0) {
@@ -121,15 +109,13 @@ export function computeMaintenanceStatusItems(
       const intervalleJours = resolveIntervalleJoursForCategory(
         type,
         dernier.intervalleJours,
-        {
-          marque: moto.marque,
-          modele: moto.modele,
-          annee: moto.annee,
-          cylindreeCm3: moto.cylindreeCm3,
-        }
+        motoCtx
       );
 
-      const nextDueMileage = dernier.kilometrage + intervalleKm;
+      const nextDueMileage =
+        type === "revision_generale" && hasRevisionPreconizationKmSource(motoCtx)
+          ? nextYamahaGridDueMileage(dernier.kilometrage, intervalleKm)
+          : dernier.kilometrage + intervalleKm;
       const nextDueDate =
         intervalleJours != null && intervalleJours > 0
           ? (() => {
@@ -161,12 +147,7 @@ export function computeMaintenanceStatusItems(
 
       const constructorIntervalKm =
         type === "revision_generale"
-          ? getRevisionIntervalRuleForMoto({
-              marque: moto.marque,
-              modele: moto.modele,
-              annee: moto.annee,
-              cylindreeCm3: moto.cylindreeCm3,
-            })?.intervalKm ?? null
+          ? getRevisionIntervalRuleForMoto(motoCtx)?.intervalKm ?? null
           : null;
 
       items.push({
