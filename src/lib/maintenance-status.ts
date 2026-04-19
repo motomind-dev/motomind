@@ -243,16 +243,40 @@ export function plannedEntretiensToStatusItems(
   return items.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
 }
 
-/** Fusionne les items calculés (depuis entretiens terminés) et les entretiens planifiés (UPCOMING). Les planifiés priment pour un même (motoId, type). */
+/**
+ * Fusionne les items calculés (depuis entretiens terminés) et les entretiens planifiés.
+ * Pour **révision générale** : si un item est déjà calculé depuis la dernière fiche terminée,
+ * on ignore un entretien encore « A_VENIR » en base pour la même moto — sinon un vieux planifié
+ * masque la prochaine échéance réelle (ex. après « Marquer comme effectué », la ligne ne passait pas à 20 000 km).
+ * Pour les autres types : les planifiés priment encore sur le calcul pour un même (motoId, type).
+ */
 export function mergeMaintenanceItems(
   computed: MaintenanceStatusItem[],
   planned: MaintenanceStatusItem[]
 ): MaintenanceStatusItem[] {
-  const plannedKeys = new Set(planned.map((p) => `${p.motoId}-${p.type}`));
+  const computedRevisionMotoIds = new Set(
+    computed
+      .filter((c) => c.type === "revision_generale")
+      .map((c) => c.motoId)
+  );
+
+  const plannedFiltered = planned.filter((p) => {
+    if (p.type !== "revision_generale") {
+      return true;
+    }
+    if (computedRevisionMotoIds.has(p.motoId)) {
+      return false;
+    }
+    return true;
+  });
+
+  const plannedKeys = new Set(
+    plannedFiltered.map((p) => `${p.motoId}-${p.type}`)
+  );
   const fromComputed = computed.filter(
     (c) => !plannedKeys.has(`${c.motoId}-${c.type}`)
   );
-  const merged = [...planned, ...fromComputed];
+  const merged = [...plannedFiltered, ...fromComputed];
   const statusOrder: Record<MaintenanceDisplayStatus, number> = {
     OVERDUE: 0,
     SOON: 1,

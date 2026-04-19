@@ -37,6 +37,7 @@ export default function ProchainsEntretiensCard({
       if (res.ok) {
         onComplete?.();
         await revalidateDashboardCrudData();
+        router.refresh();
       } else {
         const err = await res.json().catch(() => ({}));
         console.error("Error completing maintenance:", err);
@@ -69,13 +70,17 @@ export default function ProchainsEntretiensCard({
               intervalConstructeur > 0;
 
             const dueText =
-              showYamahaInterval && intervalConstructeur != null
-                ? `tous les ${intervalConstructeur.toLocaleString("fr-FR")} km`
-              : item.nextDueMileage != null
-                ? `${item.nextDueMileage.toLocaleString("fr-FR")} km`
-                : item.nextDueDate
-                  ? new Date(item.nextDueDate).toLocaleDateString("fr-FR")
-                  : "—";
+              showYamahaInterval &&
+              intervalConstructeur != null &&
+              item.nextDueMileage != null
+                ? `${item.nextDueMileage.toLocaleString("fr-FR")} km au compteur · tous les ${intervalConstructeur.toLocaleString("fr-FR")} km`
+                : showYamahaInterval && intervalConstructeur != null
+                  ? `tous les ${intervalConstructeur.toLocaleString("fr-FR")} km`
+                  : item.nextDueMileage != null
+                    ? `${item.nextDueMileage.toLocaleString("fr-FR")} km`
+                    : item.nextDueDate
+                      ? new Date(item.nextDueDate).toLocaleDateString("fr-FR")
+                      : "—";
 
             return (
               <li
