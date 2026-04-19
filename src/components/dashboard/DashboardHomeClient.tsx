@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import useSWR from "swr";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -10,7 +11,10 @@ import ReminderChecker from "@/components/ReminderChecker";
 import PremiumBanner from "@/components/PremiumBanner";
 import ProchainsEntretiensCard from "@/components/ProchainsEntretiensCard";
 import WelcomeCard from "@/components/onboarding/WelcomeCard";
-import { plannedEntretiensToStatusItems } from "@/lib/maintenance-status";
+import {
+  plannedEntretiensToStatusItems,
+  type MaintenanceStatusItem,
+} from "@/lib/maintenance-status";
 import {
   getEntretienStatus,
   getStatusColor,
@@ -40,6 +44,20 @@ type HomePayload = {
     moto: { marque: string; modele: string; kilometrage: number };
   }>;
   plan: "FREE" | "PRO";
+  /** Présent si préconisations auto Premium activées (fusion planifié + calculé). */
+  prochainsMaintenanceItems?: Array<{
+    motoId: string;
+    motoName: string;
+    type: string;
+    typeLabel: string;
+    status: MaintenanceStatusItem["status"];
+    nextDueMileage: number | null;
+    nextDueDate: string | null;
+    currentMileage: number;
+    kmRemaining: number | null;
+    daysRemaining: number | null;
+    entretienId: string | null;
+  }>;
 };
 
 const swrOptions = {
@@ -77,19 +95,35 @@ export default function DashboardHomeClient() {
     );
   }
 
-  /** Uniquement les fiches planifiées par l’utilisateur (pas les échéances dérivées du dernier entretien terminé). */
-  const maintenanceStatusItems = plannedEntretiensToStatusItems(
-    data.plannedEntretiens.map((e) => ({
-      id: e.id,
-      motoId: e.motoId,
-      type: e.type,
-      nextDueDate: e.nextDueDate ? new Date(e.nextDueDate) : null,
-      nextDueMileage: e.nextDueMileage,
-      reminderMileageBefore: e.reminderMileageBefore,
-      reminderDaysBefore: e.reminderDaysBefore,
-      moto: e.moto,
-    }))
-  );
+  const maintenanceStatusItems = useMemo(() => {
+    if (data.prochainsMaintenanceItems) {
+      return data.prochainsMaintenanceItems.map((row) => ({
+        motoId: row.motoId,
+        motoName: row.motoName,
+        type: row.type,
+        typeLabel: row.typeLabel,
+        status: row.status,
+        nextDueMileage: row.nextDueMileage,
+        nextDueDate: row.nextDueDate ? new Date(row.nextDueDate) : null,
+        currentMileage: row.currentMileage,
+        kmRemaining: row.kmRemaining,
+        daysRemaining: row.daysRemaining,
+        entretienId: row.entretienId ?? undefined,
+      }));
+    }
+    return plannedEntretiensToStatusItems(
+      data.plannedEntretiens.map((e) => ({
+        id: e.id,
+        motoId: e.motoId,
+        type: e.type,
+        nextDueDate: e.nextDueDate ? new Date(e.nextDueDate) : null,
+        nextDueMileage: e.nextDueMileage,
+        reminderMileageBefore: e.reminderMileageBefore,
+        reminderDaysBefore: e.reminderDaysBefore,
+        moto: e.moto,
+      }))
+    );
+  }, [data.plannedEntretiens, data.prochainsMaintenanceItems]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">

@@ -1,6 +1,10 @@
 import { prisma } from "./prisma";
 import { hasPremiumAccess } from "@/lib/plan-access";
-import { INTERVALLES_KM, getMaintenanceStatus } from "./utils";
+import {
+  DEFAULT_REVISION_INTERVALLE_JOURS,
+  getMergedIntervalKmForCategory,
+} from "./auto-revision-intervals";
+import { getMaintenanceStatus } from "./utils";
 import {
   sendMaintenanceReminderEmail,
   sendPlannedEntretienReminderEmail,
@@ -257,15 +261,16 @@ export async function checkMaintenanceReminders(
       );
       if (!dernier) continue;
 
-      const intervalle = dernier.intervalleKm ?? INTERVALLES_KM[type] ?? 5000;
+      const intervalle =
+        dernier.intervalleKm ?? getMergedIntervalKmForCategory(type);
       const nextDueKm = dernier.kilometrage + intervalle;
-      const nextDueDate = dernier.intervalleJours
-        ? (() => {
-            const d = new Date(dernier.date);
-            d.setDate(d.getDate() + dernier.intervalleJours!);
-            return d;
-          })()
-        : null;
+      const jours =
+        dernier.intervalleJours ?? DEFAULT_REVISION_INTERVALLE_JOURS;
+      const nextDueDate = (() => {
+        const d = new Date(dernier.date);
+        d.setDate(d.getDate() + jours);
+        return d;
+      })();
       const status = getMaintenanceStatus(
         moto.kilometrage,
         nextDueKm,

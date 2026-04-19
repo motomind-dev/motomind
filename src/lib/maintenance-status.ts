@@ -1,4 +1,8 @@
-import { INTERVALLES_KM, formatEntretienType } from "./utils";
+import { formatEntretienType } from "./utils";
+import {
+  DEFAULT_REVISION_INTERVALLE_JOURS,
+  getMergedIntervalKmForCategory,
+} from "./auto-revision-intervals";
 import {
   computeMaintenanceDisplayStatus,
   type MaintenanceDisplayStatus,
@@ -69,8 +73,9 @@ export function computeMaintenanceStatusItems(
       }
 
       const intervalleKm =
-        dernier.intervalleKm ?? INTERVALLES_KM[type] ?? 5000;
-      const intervalleJours = dernier.intervalleJours ?? 365;
+        dernier.intervalleKm ?? getMergedIntervalKmForCategory(type);
+      const intervalleJours =
+        dernier.intervalleJours ?? DEFAULT_REVISION_INTERVALLE_JOURS;
 
       const nextDueMileage = dernier.kilometrage + intervalleKm;
       const nextDueDate = (() => {

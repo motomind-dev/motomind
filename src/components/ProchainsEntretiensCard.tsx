@@ -75,8 +75,15 @@ export default function ProchainsEntretiensCard({
                 <div className="flex items-start gap-4 min-w-0 flex-1">
                   <MaintenanceStatusDot status={item.status} className="mt-1.5 flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-zinc-300 text-sm font-medium">
-                      {item.typeLabel} — {item.motoName}
+                    <p className="text-zinc-300 text-sm font-medium flex flex-wrap items-center gap-2">
+                      <span>
+                        {item.typeLabel} — {item.motoName}
+                      </span>
+                      {!item.entretienId && (
+                        <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-zinc-600 text-zinc-400 font-normal">
+                          Auto
+                        </span>
+                      )}
                     </p>
                     <p className="text-zinc-500 text-xs mt-0.5">
                       Échéance : {dueText}

@@ -2,9 +2,48 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { effectivePlanLabel } from "@/lib/plan-access";
+import { effectivePlanLabel, hasPremiumAccess } from "@/lib/plan-access";
+import { isPremiumAutoPreconizationEnabled } from "@/lib/auto-revision-intervals";
+import {
+  computeMaintenanceStatusItems,
+  mergeMaintenanceItems,
+  plannedEntretiensToStatusItems,
+  type PlannedEntretien,
+} from "@/lib/maintenance-status";
 
 export const runtime = "nodejs";
+
+type ProchainItemJson = {
+  motoId: string;
+  motoName: string;
+  type: string;
+  typeLabel: string;
+  status: string;
+  nextDueMileage: number | null;
+  nextDueDate: string | null;
+  currentMileage: number;
+  kmRemaining: number | null;
+  daysRemaining: number | null;
+  entretienId: string | null;
+};
+
+function serializeProchainsItems(
+  items: ReturnType<typeof mergeMaintenanceItems>
+): ProchainItemJson[] {
+  return items.map((item) => ({
+    motoId: item.motoId,
+    motoName: item.motoName,
+    type: item.type,
+    typeLabel: item.typeLabel,
+    status: item.status,
+    nextDueMileage: item.nextDueMileage,
+    nextDueDate: item.nextDueDate?.toISOString() ?? null,
+    currentMileage: item.currentMileage,
+    kmRemaining: item.kmRemaining,
+    daysRemaining: item.daysRemaining,
+    entretienId: item.entretienId ?? null,
+  }));
+}
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -14,7 +53,8 @@ export async function GET() {
 
   const userId = session.user.id;
 
-  const [motorcyclesCount, recentMaintenance, plannedEntretiens, userPlan] = await Promise.all([
+  const [motorcyclesCount, recentMaintenance, plannedEntretiens, userPlan] =
+    await Promise.all([
       prisma.moto.count({ where: { userId, deletedAt: null } }),
       prisma.entretien.findMany({
         where: { moto: { userId, deletedAt: null }, deletedAt: null },
@@ -39,11 +79,66 @@ export async function GET() {
       }),
     ]);
 
+  const planLabel = effectivePlanLabel(userPlan?.plan);
+
+  let prochainsMaintenanceItems: ProchainItemJson[] | undefined;
+
+  if (
+    isPremiumAutoPreconizationEnabled() &&
+    hasPremiumAccess(userPlan?.plan)
+  ) {
+    const motosFull = await prisma.moto.findMany({
+      where: { userId, deletedAt: null },
+      include: {
+        entretiens: {
+          where: { statut: "termine", deletedAt: null },
+          orderBy: { kilometrage: "desc" },
+        },
+      },
+    });
+
+    const motosForCompute = motosFull.map((m) => ({
+      id: m.id,
+      marque: m.marque,
+      modele: m.modele,
+      kilometrage: m.kilometrage,
+      entretiens: m.entretiens.map((e) => ({
+        type: e.type,
+        kilometrage: e.kilometrage,
+        date: e.date,
+        intervalleKm: e.intervalleKm,
+        intervalleJours: e.intervalleJours,
+        reminderMileageBefore: e.reminderMileageBefore,
+        reminderDaysBefore: e.reminderDaysBefore,
+      })),
+    }));
+
+    const computed = computeMaintenanceStatusItems(motosForCompute);
+
+    const planned: PlannedEntretien[] = plannedEntretiens.map((e) => ({
+      id: e.id,
+      motoId: e.motoId,
+      type: e.type,
+      nextDueDate: e.nextDueDate,
+      nextDueMileage: e.nextDueMileage,
+      reminderMileageBefore: e.reminderMileageBefore,
+      reminderDaysBefore: e.reminderDaysBefore,
+      moto: e.moto,
+    }));
+
+    const plannedItems = plannedEntretiensToStatusItems(planned);
+    const merged = mergeMaintenanceItems(computed, plannedItems);
+    prochainsMaintenanceItems = serializeProchainsItems(merged);
+  }
+
   return NextResponse.json({
     userName: session.user.name ?? null,
     motorcycleCount: motorcyclesCount,
     recentMaintenance,
     plannedEntretiens,
-    plan: effectivePlanLabel(userPlan?.plan),
+    plan: planLabel,
+    ...(prochainsMaintenanceItems !== undefined && {
+      prochainsMaintenanceItems,
+    }),
   });
 }
