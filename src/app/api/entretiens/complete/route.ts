@@ -23,14 +23,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
-  let body: { motoId?: string; type?: string };
+  let body: { motoId?: string; type?: string; completedAtKm?: number };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Format invalide" }, { status: 400 });
   }
 
-  const { motoId, type } = body;
+  const { motoId, type, completedAtKm } = body;
   if (!motoId || !type) {
     return NextResponse.json(
       { error: "Moto et type requis" },
@@ -72,6 +72,19 @@ export async function POST(req: Request) {
       ? resolveIntervalleJoursForCategory(category, undefined, motoCtx)
       : null;
 
+  /** Pour la révision auto : enregistrer le palier complété (ex. 10 000 km), pas seulement le km actuel de la moto — sinon la prochaine échéance reste bloquée à 10 000 km. */
+  let kmRevision = moto.kilometrage;
+  if (
+    autoCompute &&
+    type === "revision_generale" &&
+    typeof completedAtKm === "number" &&
+    Number.isFinite(completedAtKm) &&
+    completedAtKm > 0 &&
+    completedAtKm < 1_000_000
+  ) {
+    kmRevision = Math.round(completedAtKm);
+  }
+
   const now = new Date();
   let nextDueDate: Date | null = null;
   let nextDueMileage: number | null = null;
@@ -85,7 +98,7 @@ export async function POST(req: Request) {
       nextDueDate.setDate(nextDueDate.getDate() + intervalleJours);
     }
     nextDueMileage = nextYamahaGridDueMileage(
-      moto.kilometrage,
+      kmRevision,
       intervalleKmResolved
     );
   }
@@ -106,37 +119,51 @@ export async function POST(req: Request) {
         : e.type === type
     ) ?? null;
 
+  const newMotoKm = Math.max(moto.kilometrage, kmRevision);
+
   if (existingPlanned) {
-    const entretien = await prisma.entretien.update({
-      where: { id: existingPlanned.id },
-      data: {
-        statut: "termine",
-        date: now,
-        kilometrage: moto.kilometrage,
-        nextDueDate,
-        nextDueMileage,
-        intervalleKm: autoCompute ? intervalleKmResolved : null,
-        intervalleJours: autoCompute ? intervalleJours : null,
-      },
-    });
+    const [, entretien] = await prisma.$transaction([
+      prisma.moto.update({
+        where: { id: motoId },
+        data: { kilometrage: newMotoKm },
+      }),
+      prisma.entretien.update({
+        where: { id: existingPlanned.id },
+        data: {
+          statut: "termine",
+          date: now,
+          kilometrage: kmRevision,
+          nextDueDate,
+          nextDueMileage,
+          intervalleKm: autoCompute ? intervalleKmResolved : null,
+          intervalleJours: autoCompute ? intervalleJours : null,
+        },
+      }),
+    ]);
     return NextResponse.json(entretien);
   }
 
-  const entretien = await prisma.entretien.create({
-    data: {
-      motoId,
-      type,
-      date: now,
-      kilometrage: moto.kilometrage,
-      statut: "termine",
-      intervalleKm: autoCompute ? intervalleKmResolved : null,
-      intervalleJours: autoCompute ? intervalleJours : null,
-      nextDueMileage,
-      nextDueDate,
-      reminderMileageBefore: 500,
-      reminderDaysBefore: 30,
-    },
-  });
+  const [, entretien] = await prisma.$transaction([
+    prisma.moto.update({
+      where: { id: motoId },
+      data: { kilometrage: newMotoKm },
+    }),
+    prisma.entretien.create({
+      data: {
+        motoId,
+        type,
+        date: now,
+        kilometrage: kmRevision,
+        statut: "termine",
+        intervalleKm: autoCompute ? intervalleKmResolved : null,
+        intervalleJours: autoCompute ? intervalleJours : null,
+        nextDueMileage,
+        nextDueDate,
+        reminderMileageBefore: 500,
+        reminderDaysBefore: 30,
+      },
+    }),
+  ]);
 
   return NextResponse.json(entretien);
 }

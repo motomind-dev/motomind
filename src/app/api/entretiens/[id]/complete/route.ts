@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import {
   getEffectiveIntervalKmForCategory,
   hasRevisionPreconizationKmSource,
+  nextYamahaGridDueMileage,
   resolveIntervalleJoursForCategory,
 } from "@/lib/auto-revision-intervals";
 import {
@@ -64,6 +65,19 @@ export async function PUT(
       ? resolveIntervalleJoursForCategory(category, undefined, motoCtx)
       : null;
 
+  let kmRevision = entretien.moto.kilometrage;
+  if (
+    autoCompute &&
+    intervalleKmResolved != null &&
+    intervalleKmResolved > 0 &&
+    entretien.nextDueMileage != null
+  ) {
+    kmRevision = Math.max(
+      entretien.moto.kilometrage,
+      entretien.nextDueMileage
+    );
+  }
+
   let nextDueDate: Date | null = null;
   let nextDueMileage: number | null = null;
   if (
@@ -75,21 +89,32 @@ export async function PUT(
       nextDueDate = new Date(now);
       nextDueDate.setDate(nextDueDate.getDate() + intervalleJours);
     }
-    nextDueMileage = entretien.moto.kilometrage + intervalleKmResolved;
+    nextDueMileage = nextYamahaGridDueMileage(
+      kmRevision,
+      intervalleKmResolved
+    );
   }
 
-  const updated = await prisma.entretien.update({
-    where: { id },
-    data: {
-      statut: "termine",
-      date: now,
-      kilometrage: entretien.moto.kilometrage,
-      nextDueDate,
-      nextDueMileage,
-      intervalleKm: autoCompute ? intervalleKmResolved : null,
-      intervalleJours: autoCompute ? intervalleJours : null,
-    },
-  });
+  const newMotoKm = Math.max(entretien.moto.kilometrage, kmRevision);
+
+  const [, updated] = await prisma.$transaction([
+    prisma.moto.update({
+      where: { id: entretien.motoId },
+      data: { kilometrage: newMotoKm },
+    }),
+    prisma.entretien.update({
+      where: { id },
+      data: {
+        statut: "termine",
+        date: now,
+        kilometrage: kmRevision,
+        nextDueDate,
+        nextDueMileage,
+        intervalleKm: autoCompute ? intervalleKmResolved : null,
+        intervalleJours: autoCompute ? intervalleJours : null,
+      },
+    }),
+  ]);
 
   return NextResponse.json(updated);
 }

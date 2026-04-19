@@ -33,7 +33,14 @@ export default function ProchainsEntretiensCard({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ motoId: item.motoId, type: item.type }),
+          body: JSON.stringify({
+            motoId: item.motoId,
+            type: item.type,
+            ...(!item.entretienId &&
+              item.nextDueMileage != null && {
+                completedAtKm: item.nextDueMileage,
+              }),
+          }),
         });
       }
       if (res.ok) {
