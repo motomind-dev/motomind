@@ -305,7 +305,7 @@ export async function checkMaintenanceReminders(
         nextDueKm,
         nextDueDate,
         dernier.reminderMileageBefore ?? 500,
-        dernier.reminderDaysBefore ?? 30
+        dernier.reminderDaysBefore ?? 15
       );
 
       if (status !== "SOON" && status !== "OVERDUE") continue;

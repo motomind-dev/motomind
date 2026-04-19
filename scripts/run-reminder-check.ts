@@ -63,7 +63,7 @@ async function main() {
         nextDueKm,
         nextDueDate,
         dernier.reminderMileageBefore ?? 500,
-        dernier.reminderDaysBefore ?? 30
+        dernier.reminderDaysBefore ?? 15
       );
       console.log(
         `  ${type} | dernier ${dernier.kilometrage} km | échéance ~${nextDueKm} km | statut ${status} | reminderSent=${dernier.reminderSent}`

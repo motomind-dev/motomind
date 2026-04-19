@@ -170,7 +170,7 @@ async function migrate() {
         nextDueMileage: e.nextDueMileage ?? null,
         nextDueDate: e.nextDueDate ? new Date(e.nextDueDate) : null,
         reminderMileageBefore: e.reminderMileageBefore ?? 500,
-        reminderDaysBefore: e.reminderDaysBefore ?? 30,
+        reminderDaysBefore: e.reminderDaysBefore ?? 15,
         intervalleKm: e.intervalleKm ?? null,
         intervalleJours: e.intervalleJours ?? null,
         createdAt: new Date(e.createdAt),

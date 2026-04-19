@@ -125,7 +125,7 @@ model Maintenance {
   nextDueMileage          Int?
   nextDueDate             DateTime?
   reminderMileageBefore   Int                @default(500)
-  reminderDaysBefore     Int                @default(30)
+  reminderDaysBefore     Int                @default(15)
   intervalleKm            Int?
   intervalleJours         Int?
   createdAt               DateTime           @default(now())

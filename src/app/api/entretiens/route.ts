@@ -249,7 +249,7 @@ export async function POST(req: Request) {
           ...(nextDueMileage != null && { nextDueMileage }),
           ...(nextDueDate != null && { nextDueDate }),
           reminderMileageBefore: 500,
-          reminderDaysBefore: 30,
+          reminderDaysBefore: 15,
           ...(invoiceUrl != null && invoiceType != null && {
             invoiceUrl: String(invoiceUrl),
             invoiceType: String(invoiceType),

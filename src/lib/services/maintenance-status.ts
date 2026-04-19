@@ -7,7 +7,7 @@ export type MaintenanceDisplayStatus = "UPCOMING" | "SOON" | "OVERDUE" | "COMPLE
 
 /** Aligné sur `reminderMileageBefore` par défaut (500) et `getMaintenanceStatus`. */
 const SOON_KM_THRESHOLD = 500;
-const SOON_DAYS_THRESHOLD = 30;
+const SOON_DAYS_THRESHOLD = 15;
 
 export type ComputeStatusOptions = {
   isCompleted?: boolean;

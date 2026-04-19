@@ -110,7 +110,7 @@ model Entretien {
   nextDueMileage        Int?
   nextDueDate           DateTime?
   reminderMileageBefore  Int       @default(500)
-  reminderDaysBefore    Int       @default(30)
+  reminderDaysBefore    Int       @default(15)
   invoiceUrl            String?
   invoiceType           String?   // "image" | "pdf"
   createdAt             DateTime  @default(now())

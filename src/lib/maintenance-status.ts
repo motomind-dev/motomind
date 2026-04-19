@@ -126,7 +126,7 @@ export function computeMaintenanceStatusItems(
           : null;
 
       const reminderMileageBefore = dernier.reminderMileageBefore ?? 500;
-      const reminderDaysBefore = dernier.reminderDaysBefore ?? 30;
+      const reminderDaysBefore = dernier.reminderDaysBefore ?? 15;
 
       const status = computeMaintenanceDisplayStatus({
         isCompleted: false,
@@ -205,7 +205,7 @@ export function plannedEntretiensToStatusItems(
       nextDueMileage,
       nextDueDate,
       reminderMileageBefore: e.reminderMileageBefore ?? 500,
-      reminderDaysBefore: e.reminderDaysBefore ?? 30,
+      reminderDaysBefore: e.reminderDaysBefore ?? 15,
     });
     const kmRemaining =
       nextDueMileage != null && nextDueMileage > currentMileage

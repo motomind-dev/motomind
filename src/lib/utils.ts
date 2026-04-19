@@ -11,7 +11,7 @@ export const INTERVALLES_KM: Record<string, number> = {
 export const SEUIL_PROCHE_KM = 500;
 
 // Seuil "proche" en jours
-export const SEUIL_PROCHE_JOURS = 30;
+export const SEUIL_PROCHE_JOURS = 15;
 
 export type EtatMoto = "ok" | "bientot" | "en_retard";
 
@@ -30,7 +30,7 @@ export function getEtatMoto(
   // En retard
   if (kmRestants < 0 || joursRestants < 0) return "en_retard";
 
-  // Bientôt (500 km ou 30 jours)
+  // Bientôt (500 km ou 15 jours)
   if (kmRestants <= SEUIL_PROCHE_KM || joursRestants <= SEUIL_PROCHE_JOURS)
     return "bientot";
 
@@ -75,7 +75,7 @@ export function getMaintenanceStatus(
   nextDueMileage: number | null,
   nextDueDate: Date | null,
   reminderMileageBefore: number = 500,
-  reminderDaysBefore: number = 30
+  reminderDaysBefore: number = 15
 ): MaintenanceStatus {
   const today = new Date();
   today.setHours(0, 0, 0, 0);

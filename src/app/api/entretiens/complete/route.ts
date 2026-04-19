@@ -163,7 +163,7 @@ export async function POST(req: Request) {
         nextDueMileage,
         nextDueDate,
         reminderMileageBefore: 500,
-        reminderDaysBefore: 30,
+        reminderDaysBefore: 15,
       },
     }),
   ]);
