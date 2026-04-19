@@ -13,6 +13,7 @@ import {
   isAutoPrecomputedMaintenanceCategory,
 } from "@/lib/maintenance-entretien-category";
 import { whereEntretienActive } from "@/lib/prisma-filters";
+import { kilometrageAtCompletion } from "@/lib/entretien-km";
 
 export const runtime = "nodejs";
 
@@ -139,6 +140,9 @@ export async function POST(req: Request) {
   let km: number;
   let nextDueDate: Date | null = null;
   let nextDueMileage: number | null = null;
+  let existingPlannedCompleted: Awaited<
+    ReturnType<typeof prisma.entretien.findFirst>
+  > = null;
 
   if (isUpcoming) {
     dateObj = bodyNextDueDate ? new Date(bodyNextDueDate) : new Date();
@@ -149,7 +153,31 @@ export async function POST(req: Request) {
     if (bodyNextDueMileage != null && String(bodyNextDueMileage).trim() !== "") nextDueMileage = parseInt(String(bodyNextDueMileage), 10);
   } else {
     dateObj = new Date(date);
-    km = parseInt(String(kilometrage), 10);
+    const kmParsed = parseInt(String(kilometrage), 10);
+    if (Number.isNaN(kmParsed)) {
+      return NextResponse.json(
+        { error: "Kilométrage invalide" },
+        { status: 400 }
+      );
+    }
+
+    existingPlannedCompleted = await prisma.entretien.findFirst({
+      where: {
+        motoId,
+        type,
+        statut: { in: ["A_VENIR", "proche", "en_retard"] },
+        moto: { userId: session.user.id, deletedAt: null },
+        deletedAt: null,
+      },
+    });
+
+    km = existingPlannedCompleted
+      ? Math.max(
+          kmParsed,
+          kilometrageAtCompletion(moto.kilometrage, existingPlannedCompleted)
+        )
+      : Math.max(moto.kilometrage, kmParsed);
+
     if (
       autoComputeNextFromCompletion &&
       intervalleKmResolved != null &&
@@ -163,20 +191,18 @@ export async function POST(req: Request) {
     }
   }
 
-  if (!isUpcoming) {
-    const existingPlanned = await prisma.entretien.findFirst({
-      where: {
-        motoId,
-        type,
-        statut: { in: ["A_VENIR", "proche", "en_retard"] },
-        moto: { userId: session.user.id, deletedAt: null },
-        deletedAt: null,
-      },
-    });
+  const newMotoKmCompleted = !isUpcoming
+    ? Math.max(moto.kilometrage, km)
+    : moto.kilometrage;
 
-    if (existingPlanned) {
-      const entretien = await prisma.entretien.update({
-        where: { id: existingPlanned.id },
+  if (!isUpcoming && existingPlannedCompleted) {
+    const [, entretien] = await prisma.$transaction([
+      prisma.moto.update({
+        where: { id: motoId },
+        data: { kilometrage: newMotoKmCompleted },
+      }),
+      prisma.entretien.update({
+        where: { id: existingPlannedCompleted.id },
         data: {
           statut: "termine",
           date: dateObj,
@@ -188,11 +214,50 @@ export async function POST(req: Request) {
           nextDueMileage: autoComputeNextFromCompletion ? nextDueMileage : null,
           intervalleKm: autoComputeNextFromCompletion ? intervalleKmResolved : null,
           intervalleJours: autoComputeNextFromCompletion ? intervalleJours : null,
-          ...(invoiceUrl != null && invoiceType != null && { invoiceUrl: String(invoiceUrl), invoiceType: String(invoiceType) }),
+          ...(invoiceUrl != null && invoiceType != null && {
+            invoiceUrl: String(invoiceUrl),
+            invoiceType: String(invoiceType),
+          }),
         },
-      });
-      return NextResponse.json(entretien);
-    }
+      }),
+    ]);
+    return NextResponse.json(entretien);
+  }
+
+  if (!isUpcoming) {
+    const [, entretien] = await prisma.$transaction([
+      prisma.moto.update({
+        where: { id: motoId },
+        data: { kilometrage: newMotoKmCompleted },
+      }),
+      prisma.entretien.create({
+        data: {
+          motoId,
+          type,
+          date: dateObj,
+          kilometrage: km,
+          note: note || null,
+          cout: cout != null ? parseFloat(cout) : null,
+          statut: statut || "termine",
+          garage: garage || null,
+          intervalleKm: autoComputeNextFromCompletion
+            ? intervalleKmResolved
+            : null,
+          intervalleJours: autoComputeNextFromCompletion
+            ? intervalleJours
+            : null,
+          ...(nextDueMileage != null && { nextDueMileage }),
+          ...(nextDueDate != null && { nextDueDate }),
+          reminderMileageBefore: 500,
+          reminderDaysBefore: 30,
+          ...(invoiceUrl != null && invoiceType != null && {
+            invoiceUrl: String(invoiceUrl),
+            invoiceType: String(invoiceType),
+          }),
+        },
+      }),
+    ]);
+    return NextResponse.json(entretien);
   }
 
   const entretien = await prisma.entretien.create({
@@ -203,23 +268,18 @@ export async function POST(req: Request) {
       kilometrage: km,
       note: note || null,
       cout: cout != null ? parseFloat(cout) : null,
-      statut: isUpcoming ? "A_VENIR" : (statut || "termine"),
+      statut: "A_VENIR",
       garage: garage || null,
-      intervalleKm: isUpcoming
-        ? null
-        : autoComputeNextFromCompletion
-          ? intervalleKmResolved
-          : null,
-      intervalleJours: isUpcoming
-        ? null
-        : autoComputeNextFromCompletion
-          ? intervalleJours
-          : null,
+      intervalleKm: null,
+      intervalleJours: null,
       ...(nextDueMileage != null && { nextDueMileage }),
       ...(nextDueDate != null && { nextDueDate }),
       reminderMileageBefore: 500,
-      reminderDaysBefore: isUpcoming ? 1 : 30,
-      ...(invoiceUrl != null && invoiceType != null && { invoiceUrl: String(invoiceUrl), invoiceType: String(invoiceType) }),
+      reminderDaysBefore: 1,
+      ...(invoiceUrl != null && invoiceType != null && {
+        invoiceUrl: String(invoiceUrl),
+        invoiceType: String(invoiceType),
+      }),
     },
   });
 

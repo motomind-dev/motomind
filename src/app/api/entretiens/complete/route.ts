@@ -13,6 +13,7 @@ import {
   getMaintenanceCategoryForType,
   isAutoPrecomputedMaintenanceCategory,
 } from "@/lib/maintenance-entretien-category";
+import { kilometrageAtCompletion } from "@/lib/entretien-km";
 
 /**
  * Marque un entretien comme effectué en créant un nouvel enregistrement termine.
@@ -72,7 +73,23 @@ export async function POST(req: Request) {
       ? resolveIntervalleJoursForCategory(category, undefined, motoCtx)
       : null;
 
-  /** Pour la révision auto : enregistrer le palier complété (ex. 10 000 km), pas seulement le km actuel de la moto — sinon la prochaine échéance reste bloquée à 10 000 km. */
+  const categoryForMatch = getMaintenanceCategoryForType(type);
+  const plannedCandidates = await prisma.entretien.findMany({
+    where: {
+      motoId,
+      statut: { in: ["A_VENIR", "proche", "en_retard"] },
+      moto: { userId: session.user.id, deletedAt: null },
+      deletedAt: null,
+    },
+  });
+  const existingPlanned =
+    plannedCandidates.find((e) =>
+      categoryForMatch != null
+        ? entretienMatchesCategory(e.type, categoryForMatch)
+        : e.type === type
+    ) ?? null;
+
+  /** Révision auto : palier complété (ex. 10 000 km) via le client ; sinon km issu du plan ou du compteur. */
   let kmRevision = moto.kilometrage;
   if (
     autoCompute &&
@@ -83,6 +100,8 @@ export async function POST(req: Request) {
     completedAtKm < 1_000_000
   ) {
     kmRevision = Math.round(completedAtKm);
+  } else if (existingPlanned) {
+    kmRevision = kilometrageAtCompletion(moto.kilometrage, existingPlanned);
   }
 
   const now = new Date();
@@ -102,22 +121,6 @@ export async function POST(req: Request) {
       intervalleKmResolved
     );
   }
-
-  const categoryForMatch = getMaintenanceCategoryForType(type);
-  const plannedCandidates = await prisma.entretien.findMany({
-    where: {
-      motoId,
-      statut: { in: ["A_VENIR", "proche", "en_retard"] },
-      moto: { userId: session.user.id, deletedAt: null },
-      deletedAt: null,
-    },
-  });
-  const existingPlanned =
-    plannedCandidates.find((e) =>
-      categoryForMatch != null
-        ? entretienMatchesCategory(e.type, categoryForMatch)
-        : e.type === type
-    ) ?? null;
 
   const newMotoKm = Math.max(moto.kilometrage, kmRevision);
 

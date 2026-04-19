@@ -12,6 +12,7 @@ import {
   getMaintenanceCategoryForType,
   isAutoPrecomputedMaintenanceCategory,
 } from "@/lib/maintenance-entretien-category";
+import { kilometrageAtCompletion } from "@/lib/entretien-km";
 
 /**
  * Marque un entretien planifié comme effectué (mise à jour par ID).
@@ -65,18 +66,10 @@ export async function PUT(
       ? resolveIntervalleJoursForCategory(category, undefined, motoCtx)
       : null;
 
-  let kmRevision = entretien.moto.kilometrage;
-  if (
-    autoCompute &&
-    intervalleKmResolved != null &&
-    intervalleKmResolved > 0 &&
-    entretien.nextDueMileage != null
-  ) {
-    kmRevision = Math.max(
-      entretien.moto.kilometrage,
-      entretien.nextDueMileage
-    );
-  }
+  const kmRevision = kilometrageAtCompletion(
+    entretien.moto.kilometrage,
+    entretien
+  );
 
   let nextDueDate: Date | null = null;
   let nextDueMileage: number | null = null;
