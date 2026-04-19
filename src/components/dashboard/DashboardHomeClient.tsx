@@ -57,6 +57,7 @@ type HomePayload = {
     kmRemaining: number | null;
     daysRemaining: number | null;
     entretienId: string | null;
+    constructorIntervalKm: number | null;
   }>;
 };
 
@@ -87,6 +88,7 @@ export default function DashboardHomeClient() {
         kmRemaining: row.kmRemaining,
         daysRemaining: row.daysRemaining,
         entretienId: row.entretienId ?? undefined,
+        constructorIntervalKm: row.constructorIntervalKm ?? null,
       }));
     }
     return plannedEntretiensToStatusItems(

@@ -25,6 +25,7 @@ type ProchainItemJson = {
   kmRemaining: number | null;
   daysRemaining: number | null;
   entretienId: string | null;
+  constructorIntervalKm: number | null;
 };
 
 function serializeProchainsItems(
@@ -42,6 +43,7 @@ function serializeProchainsItems(
     kmRemaining: item.kmRemaining,
     daysRemaining: item.daysRemaining,
     entretienId: item.entretienId ?? null,
+    constructorIntervalKm: item.constructorIntervalKm ?? null,
   }));
 }
 

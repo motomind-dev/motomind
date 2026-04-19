@@ -3,6 +3,7 @@ import {
   getEffectiveIntervalKmForCategory,
   resolveIntervalleJoursForCategory,
 } from "./auto-revision-intervals";
+import { getRevisionIntervalRuleForMoto } from "./yamaha-revision-intervals";
 import {
   computeMaintenanceDisplayStatus,
   type MaintenanceDisplayStatus,
@@ -25,6 +26,8 @@ export type MaintenanceStatusItem = {
   currentMileage: number;
   kmRemaining: number | null;
   daysRemaining: number | null;
+  /** Grille Yamaha (révision) : 6 000 ou 10 000 km — pour libellé « tous les X km », distinct du km compteur */
+  constructorIntervalKm?: number | null;
   /** ID de l'entretien planifié (quand disponible) pour PUT complete */
   entretienId?: string;
 };
@@ -135,6 +138,16 @@ export function computeMaintenanceStatusItems(
             )
           : null;
 
+      const constructorIntervalKm =
+        type === "revision_generale"
+          ? getRevisionIntervalRuleForMoto({
+              marque: moto.marque,
+              modele: moto.modele,
+              annee: moto.annee,
+              cylindreeCm3: moto.cylindreeCm3,
+            })?.intervalKm ?? null
+          : null;
+
       items.push({
         motoId: moto.id,
         motoName,
@@ -147,6 +160,7 @@ export function computeMaintenanceStatusItems(
         kmRemaining: kmRemaining > 0 ? Math.round(kmRemaining) : null,
         daysRemaining:
           daysRemaining != null && daysRemaining > 0 ? daysRemaining : null,
+        constructorIntervalKm,
       });
     }
   }

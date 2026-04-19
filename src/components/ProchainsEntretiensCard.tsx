@@ -60,8 +60,16 @@ export default function ProchainsEntretiensCard({
           {items.map((item) => {
             const key = `${item.motoId}-${item.type}`;
             const isLoading = loading === key;
+            const intervalConstructeur = item.constructorIntervalKm;
+            const showYamahaInterval =
+              !item.entretienId &&
+              intervalConstructeur != null &&
+              intervalConstructeur > 0;
+
             const dueText =
-              item.nextDueMileage != null
+              showYamahaInterval && intervalConstructeur != null
+                ? `tous les ${intervalConstructeur.toLocaleString("fr-FR")} km`
+              : item.nextDueMileage != null
                 ? `${item.nextDueMileage.toLocaleString("fr-FR")} km`
                 : item.nextDueDate
                   ? new Date(item.nextDueDate).toLocaleDateString("fr-FR")
@@ -87,6 +95,13 @@ export default function ProchainsEntretiensCard({
                     </p>
                     <p className="text-zinc-500 text-xs mt-0.5">
                       Échéance : {dueText}
+                      {showYamahaInterval && item.nextDueMileage != null && (
+                        <>
+                          {" "}
+                          · Prochain passage au compteur :{" "}
+                          {item.nextDueMileage.toLocaleString("fr-FR")} km
+                        </>
+                      )}
                       {item.status === "SOON" && item.kmRemaining != null && item.kmRemaining > 0 && (
                         <> · Dans {item.kmRemaining.toLocaleString("fr-FR")} km</>
                       )}
