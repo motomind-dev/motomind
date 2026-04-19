@@ -12,6 +12,7 @@ import {
 } from "@/lib/maintenance-status";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type ProchainItemJson = {
   motoId: string;
@@ -94,7 +95,7 @@ export async function GET() {
       include: {
         entretiens: {
           where: { statut: "termine", deletedAt: null },
-          orderBy: { kilometrage: "desc" },
+          orderBy: [{ kilometrage: "desc" }, { date: "desc" }],
         },
       },
     });

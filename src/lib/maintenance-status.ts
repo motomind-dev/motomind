@@ -74,7 +74,12 @@ export function computeMaintenanceStatusItems(
 
       const derniers = moto.entretiens
         .filter((e) => entretienMatchesCategory(e.type, type))
-        .sort((a, b) => b.kilometrage - a.kilometrage);
+        .sort((a, b) => {
+          if (b.kilometrage !== a.kilometrage) {
+            return b.kilometrage - a.kilometrage;
+          }
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        });
       const dernier = derniers[0];
 
       // Sans au moins un entretien terminé pour ce type, on n’invente pas d’échéance

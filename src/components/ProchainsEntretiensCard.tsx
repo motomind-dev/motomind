@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import MaintenanceStatusDot from "@/components/MaintenanceStatusDot";
 import type { MaintenanceStatusItem } from "@/lib/maintenance-status";
@@ -14,6 +15,7 @@ export default function ProchainsEntretiensCard({
   items: MaintenanceStatusItem[];
   onComplete?: () => void;
 }) {
+  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
 
   async function handleMarkComplete(item: MaintenanceStatusItem) {
@@ -95,13 +97,6 @@ export default function ProchainsEntretiensCard({
                     </p>
                     <p className="text-zinc-500 text-xs mt-0.5">
                       Échéance : {dueText}
-                      {showYamahaInterval && item.nextDueMileage != null && (
-                        <>
-                          {" "}
-                          · Prochain passage au compteur :{" "}
-                          {item.nextDueMileage.toLocaleString("fr-FR")} km
-                        </>
-                      )}
                       {item.status === "SOON" && item.kmRemaining != null && item.kmRemaining > 0 && (
                         <> · Dans {item.kmRemaining.toLocaleString("fr-FR")} km</>
                       )}
