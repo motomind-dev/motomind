@@ -69,18 +69,16 @@ export default function ProchainsEntretiensCard({
               intervalConstructeur != null &&
               intervalConstructeur > 0;
 
+            // Préconisation Yamaha (AUTO) : uniquement l’intervalle grille (6k / 10k), pas le km absolu au compteur
+            // (dernier passage + 10k → ex. 11 500 km, ce qui prête à confusion avec « tous les 10 000 km »).
             const dueText =
-              showYamahaInterval &&
-              intervalConstructeur != null &&
-              item.nextDueMileage != null
-                ? `${item.nextDueMileage.toLocaleString("fr-FR")} km au compteur · tous les ${intervalConstructeur.toLocaleString("fr-FR")} km`
-                : showYamahaInterval && intervalConstructeur != null
-                  ? `tous les ${intervalConstructeur.toLocaleString("fr-FR")} km`
-                  : item.nextDueMileage != null
-                    ? `${item.nextDueMileage.toLocaleString("fr-FR")} km`
-                    : item.nextDueDate
-                      ? new Date(item.nextDueDate).toLocaleDateString("fr-FR")
-                      : "—";
+              showYamahaInterval && intervalConstructeur != null
+                ? `tous les ${intervalConstructeur.toLocaleString("fr-FR")} km`
+                : item.nextDueMileage != null
+                  ? `${item.nextDueMileage.toLocaleString("fr-FR")} km`
+                  : item.nextDueDate
+                    ? new Date(item.nextDueDate).toLocaleDateString("fr-FR")
+                    : "—";
 
             return (
               <li
