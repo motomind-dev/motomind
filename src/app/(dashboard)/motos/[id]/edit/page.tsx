@@ -14,6 +14,7 @@ type Moto = {
   modele: string;
   annee: number;
   kilometrage: number;
+  cylindreeCm3?: number | null;
 };
 
 export default function EditMotoPage() {
@@ -25,6 +26,7 @@ export default function EditMotoPage() {
   const [modele, setModele] = useState("");
   const [annee, setAnnee] = useState(new Date().getFullYear().toString());
   const [kilometrage, setKilometrage] = useState("");
+  const [cylindreeCm3, setCylindreeCm3] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -41,6 +43,7 @@ export default function EditMotoPage() {
         setModele(m.modele ?? "");
         setAnnee(String(m.annee ?? new Date().getFullYear()));
         setKilometrage(String(m.kilometrage ?? 0));
+        setCylindreeCm3(m.cylindreeCm3 != null ? String(m.cylindreeCm3) : "");
       })
       .catch(() => setError("Impossible de charger la moto."))
       .finally(() => setLoading(false));
@@ -51,6 +54,20 @@ export default function EditMotoPage() {
     setError("");
     setSubmitting(true);
 
+    const ccRaw = cylindreeCm3.trim();
+    let cylindreeValue: number | null;
+    if (ccRaw === "") {
+      cylindreeValue = null;
+    } else {
+      const n = parseInt(ccRaw, 10);
+      if (Number.isNaN(n) || n < 1 || n > 3000) {
+        setError("Cylindrée : entre 1 et 3000 cm³, ou laisse vide.");
+        setSubmitting(false);
+        return;
+      }
+      cylindreeValue = n;
+    }
+
     const res = await fetch(`/api/motos/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -59,6 +76,7 @@ export default function EditMotoPage() {
         modele: modele.trim(),
         annee: parseInt(annee, 10) || new Date().getFullYear(),
         kilometrage: parseInt(kilometrage, 10) || 0,
+        cylindreeCm3: cylindreeValue,
       }),
     });
 
@@ -195,6 +213,23 @@ export default function EditMotoPage() {
                 className={inputClass}
               />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">
+              Cylindrée (cm³) — optionnel
+            </label>
+            <input
+              type="number"
+              value={cylindreeCm3}
+              onChange={(e) => setCylindreeCm3(e.target.value)}
+              min={1}
+              max={3000}
+              placeholder="ex. 125, 689, 998…"
+              className={inputClass}
+            />
+            <p className="text-xs text-zinc-500 mt-1.5">
+              Améliore les préconisations de révision (ex. 125 → 6 000 km, &gt;125 → 10 000 km).
+            </p>
           </div>
           <div className="flex gap-3 pt-4">
             <Button type="submit" disabled={submitting}>

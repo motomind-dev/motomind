@@ -72,30 +72,8 @@ export default function DashboardHomeClient() {
     swrOptions
   );
 
-  if (error) {
-    return (
-      <div className="p-4 md:p-6">
-        <p className="text-red-400 text-sm">
-          Impossible de charger le tableau de bord. Réessaie dans un instant.
-        </p>
-      </div>
-    );
-  }
-
-  if (isLoading || !data) {
-    return (
-      <div className="p-4 md:p-6 space-y-6 animate-pulse" aria-busy="true">
-        <div className="h-8 w-56 bg-zinc-800 rounded-lg" />
-        <div className="h-4 w-72 bg-zinc-800/70 rounded" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="h-36 rounded-xl border border-zinc-800 bg-zinc-900/80" />
-          <div className="h-36 rounded-xl border border-zinc-800 bg-zinc-900/80" />
-        </div>
-      </div>
-    );
-  }
-
   const maintenanceStatusItems = useMemo(() => {
+    if (!data) return [];
     if (data.prochainsMaintenanceItems) {
       return data.prochainsMaintenanceItems.map((row) => ({
         motoId: row.motoId,
@@ -123,7 +101,30 @@ export default function DashboardHomeClient() {
         moto: e.moto,
       }))
     );
-  }, [data.plannedEntretiens, data.prochainsMaintenanceItems]);
+  }, [data]);
+
+  if (error) {
+    return (
+      <div className="p-4 md:p-6">
+        <p className="text-red-400 text-sm">
+          Impossible de charger le tableau de bord. Réessaie dans un instant.
+        </p>
+      </div>
+    );
+  }
+
+  if (isLoading || !data) {
+    return (
+      <div className="p-4 md:p-6 space-y-6 animate-pulse" aria-busy="true">
+        <div className="h-8 w-56 bg-zinc-800 rounded-lg" />
+        <div className="h-4 w-72 bg-zinc-800/70 rounded" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="h-36 rounded-xl border border-zinc-800 bg-zinc-900/80" />
+          <div className="h-36 rounded-xl border border-zinc-800 bg-zinc-900/80" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-6">

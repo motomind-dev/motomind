@@ -1,7 +1,33 @@
 import { INTERVALLES_KM } from "./utils";
+import { getRevisionIntervalRuleForMoto } from "./yamaha-revision-intervals";
 
 /** Période par défaut entre deux révisions « calendaires » (ex. révision annuelle). */
 export const DEFAULT_REVISION_INTERVALLE_JOURS = 365;
+
+export type MotoIntervalContext = {
+  marque: string;
+  modele: string;
+  annee: number;
+  cylindreeCm3: number | null;
+};
+
+/**
+ * Intervalle km effectif pour une catégorie : priorité à l’entretien enregistré,
+ * puis règle « révision générale » (Yamaha / cylindrée), sinon défauts par type.
+ */
+export function getEffectiveIntervalKmForCategory(
+  category: string,
+  moto: MotoIntervalContext,
+  dernierIntervalleKm: number | null | undefined
+): number {
+  if (dernierIntervalleKm != null && dernierIntervalleKm > 0) {
+    return dernierIntervalleKm;
+  }
+  if (category === "revision_generale") {
+    return getRevisionIntervalRuleForMoto(moto).intervalKm;
+  }
+  return getMergedIntervalKmForCategory(category);
+}
 
 /**
  * Intervalles km optionnels via env (JSON), fusionnés avec `INTERVALLES_KM`.
@@ -35,8 +61,14 @@ export function getMergedIntervalKmForCategory(category: string): number {
   return 5000;
 }
 
-/** Active la fusion dashboard + e-mails pour les préconisations auto (Premium). */
+/**
+ * Fusion dashboard + e-mails pour les préconisations auto (Premium).
+ * Activé par défaut en prod ; désactiver avec PREMIUM_AUTO_PRECONIZATION=false
+ */
 export function isPremiumAutoPreconizationEnabled(): boolean {
   const v = process.env.PREMIUM_AUTO_PRECONIZATION?.trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes" || v === "on";
+  if (v === "0" || v === "false" || v === "off" || v === "no") {
+    return false;
+  }
+  return true;
 }

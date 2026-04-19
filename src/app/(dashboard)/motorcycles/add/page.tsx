@@ -15,6 +15,7 @@ type Moto = {
   modele: string;
   annee: number;
   kilometrage: number;
+  cylindreeCm3?: number | null;
   photo: string | null;
   shareToken?: string | null;
 };
@@ -31,6 +32,7 @@ export default function AddMotorcyclePage() {
   const [modele, setModele] = useState("");
   const [annee, setAnnee] = useState(new Date().getFullYear().toString());
   const [kilometrage, setKilometrage] = useState("0");
+  const [cylindreeCm3, setCylindreeCm3] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPremiumPrompt, setShowPremiumPrompt] = useState(false);
@@ -41,15 +43,30 @@ export default function AddMotorcyclePage() {
     setError("");
     setShowPremiumPrompt(false);
 
+    const ccRaw = cylindreeCm3.trim();
+    if (ccRaw !== "") {
+      const n = parseInt(ccRaw, 10);
+      if (Number.isNaN(n) || n < 1 || n > 3000) {
+        setError("Cylindrée : entre 1 et 3000 cm³, ou laisse vide.");
+        setLoading(false);
+        return;
+      }
+    }
+
+    const payload: Record<string, unknown> = {
+      marque,
+      modele,
+      annee: parseInt(annee, 10),
+      kilometrage: parseInt(kilometrage, 10) || 0,
+    };
+    if (ccRaw !== "") {
+      payload.cylindreeCm3 = parseInt(ccRaw, 10);
+    }
+
     const res = await fetch("/api/motos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        marque,
-        modele,
-        annee: parseInt(annee, 10),
-        kilometrage: parseInt(kilometrage, 10) || 0,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
@@ -164,6 +181,23 @@ export default function AddMotorcyclePage() {
                 className={inputClass}
               />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">
+              Cylindrée (cm³) — optionnel
+            </label>
+            <input
+              type="number"
+              value={cylindreeCm3}
+              onChange={(e) => setCylindreeCm3(e.target.value)}
+              min={1}
+              max={3000}
+              placeholder="ex. 125, 689, 998…"
+              className={inputClass}
+            />
+            <p className="text-xs text-zinc-500 mt-1.5">
+              Améliore les préconisations de révision (ex. 125 → 6 000 km, &gt;125 → 10 000 km).
+            </p>
           </div>
           <div className="flex gap-3 pt-4">
             <Button type="submit" disabled={loading}>

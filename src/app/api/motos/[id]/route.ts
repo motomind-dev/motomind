@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { softDeleteMoto } from "@/lib/services/soft-delete";
 import { whereMotoActive } from "@/lib/prisma-filters";
+import { updateMotorcycleBodySchema } from "@/lib/validators/motorcycle";
 
 async function checkMotoOwnership(id: string, userId: string) {
   const moto = await prisma.moto.findFirst({
@@ -46,17 +47,23 @@ export async function PATCH(
   }
 
   const body = await req.json();
-  const { marque, modele, annee, kilometrage, photo, dateAchat } = body;
+  const parsed = updateMotorcycleBodySchema.safeParse(body);
+  if (!parsed.success) {
+    const msg = parsed.error.errors[0]?.message ?? "Données invalides";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
 
+  const d = parsed.data;
   const updated = await prisma.moto.update({
     where: { id },
     data: {
-      ...(marque && { marque }),
-      ...(modele && { modele }),
-      ...(annee && { annee: parseInt(annee, 10) }),
-      ...(kilometrage !== undefined && { kilometrage: parseInt(kilometrage, 10) }),
-      ...(photo !== undefined && { photo }),
-      ...(dateAchat !== undefined && { dateAchat: dateAchat ? new Date(dateAchat) : null }),
+      ...(d.marque !== undefined && { marque: d.marque }),
+      ...(d.modele !== undefined && { modele: d.modele }),
+      ...(d.annee !== undefined && { annee: d.annee }),
+      ...(d.kilometrage !== undefined && { kilometrage: d.kilometrage }),
+      ...(d.photo !== undefined && { photo: d.photo }),
+      ...(d.dateAchat !== undefined && { dateAchat: d.dateAchat }),
+      ...(d.cylindreeCm3 !== undefined && { cylindreeCm3: d.cylindreeCm3 ?? null }),
     },
   });
 

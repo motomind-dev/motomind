@@ -90,7 +90,8 @@ export async function POST(req: Request) {
     }
   }
 
-  const { marque, modele, annee, kilometrage, photo, dateAchat } = parsed.data;
+  const { marque, modele, annee, kilometrage, photo, dateAchat, cylindreeCm3 } =
+    parsed.data;
 
   const moto = await prisma.moto.create({
     data: {
@@ -101,6 +102,7 @@ export async function POST(req: Request) {
       kilometrage: kilometrage ?? 0,
       photo: photo || null,
       dateAchat: dateAchat ?? null,
+      ...(cylindreeCm3 != null ? { cylindreeCm3 } : {}),
     },
   });
 

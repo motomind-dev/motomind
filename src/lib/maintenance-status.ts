@@ -1,7 +1,7 @@
 import { formatEntretienType } from "./utils";
 import {
   DEFAULT_REVISION_INTERVALLE_JOURS,
-  getMergedIntervalKmForCategory,
+  getEffectiveIntervalKmForCategory,
 } from "./auto-revision-intervals";
 import {
   computeMaintenanceDisplayStatus,
@@ -40,6 +40,8 @@ type MotoWithEntretiens = {
   id: string;
   marque: string;
   modele: string;
+  annee: number;
+  cylindreeCm3: number | null;
   kilometrage: number;
   entretiens: {
     type: string;
@@ -72,8 +74,16 @@ export function computeMaintenanceStatusItems(
         continue;
       }
 
-      const intervalleKm =
-        dernier.intervalleKm ?? getMergedIntervalKmForCategory(type);
+      const intervalleKm = getEffectiveIntervalKmForCategory(
+        type,
+        {
+          marque: moto.marque,
+          modele: moto.modele,
+          annee: moto.annee,
+          cylindreeCm3: moto.cylindreeCm3,
+        },
+        dernier.intervalleKm
+      );
       const intervalleJours =
         dernier.intervalleJours ?? DEFAULT_REVISION_INTERVALLE_JOURS;
 

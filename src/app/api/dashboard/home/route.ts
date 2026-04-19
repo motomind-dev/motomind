@@ -101,6 +101,8 @@ export async function GET() {
       id: m.id,
       marque: m.marque,
       modele: m.modele,
+      annee: m.annee,
+      cylindreeCm3: m.cylindreeCm3 ?? null,
       kilometrage: m.kilometrage,
       entretiens: m.entretiens.map((e) => ({
         type: e.type,

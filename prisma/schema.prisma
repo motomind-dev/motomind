@@ -79,6 +79,8 @@ model Moto {
   marque      String
   modele      String
   annee       Int
+  /// Cylindrée en cm³ (optionnel) — affine les intervalles de révision (ex. Yamaha 125 → 6 000 km, >125 → 10 000 km).
+  cylindreeCm3 Int?
   kilometrage Int       @default(0)
   photo       String?
   dateAchat   DateTime?

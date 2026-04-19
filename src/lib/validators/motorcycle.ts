@@ -5,6 +5,16 @@ const MIN_YEAR = 1900;
 const MAX_KM = 2_000_000;
 const MAX_STRING = 200;
 
+const cylindreeCm3Field = z
+  .union([z.number(), z.string(), z.null()])
+  .optional()
+  .transform((v) => {
+    if (v === "" || v === null || v === undefined) return undefined;
+    const n = typeof v === "string" ? parseInt(v, 10) : v;
+    if (Number.isNaN(n) || n < 1 || n > 3000) return undefined;
+    return n;
+  });
+
 export const createMotorcycleSchema = z.object({
   marque: z.string().min(1, "Marque requise").max(MAX_STRING).trim(),
   modele: z.string().min(1, "Modèle requis").max(MAX_STRING).trim(),
@@ -22,6 +32,7 @@ export const createMotorcycleSchema = z.object({
     .default(0),
   photo: z.string().url().optional().nullable().or(z.literal("")),
   dateAchat: z.coerce.date().optional().nullable(),
+  cylindreeCm3: cylindreeCm3Field,
 });
 
 /** For API JSON body: strings from client */
@@ -40,6 +51,7 @@ export const createMotorcycleBodySchema = z.object({
     .optional()
     .nullable()
     .transform((v) => (v && v !== "" ? new Date(v as string) : null)),
+  cylindreeCm3: cylindreeCm3Field,
 });
 
 export const updateMotorcycleSchema = createMotorcycleSchema.partial();
@@ -62,4 +74,12 @@ export const updateMotorcycleBodySchema = z.object({
     .optional()
     .nullable()
     .transform((v) => (v && v !== "" ? new Date(v as string) : null)),
+  /** null = effacer la cylindrée enregistrée */
+  cylindreeCm3: z
+    .union([
+      z.number().int().min(1).max(3000),
+      z.string().regex(/^\d+$/).transform((s) => parseInt(s, 10)),
+      z.null(),
+    ])
+    .optional(),
 });

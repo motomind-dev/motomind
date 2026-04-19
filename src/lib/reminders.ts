@@ -2,7 +2,7 @@ import { prisma } from "./prisma";
 import { hasPremiumAccess } from "@/lib/plan-access";
 import {
   DEFAULT_REVISION_INTERVALLE_JOURS,
-  getMergedIntervalKmForCategory,
+  getEffectiveIntervalKmForCategory,
 } from "./auto-revision-intervals";
 import { getMaintenanceStatus } from "./utils";
 import {
@@ -261,8 +261,16 @@ export async function checkMaintenanceReminders(
       );
       if (!dernier) continue;
 
-      const intervalle =
-        dernier.intervalleKm ?? getMergedIntervalKmForCategory(type);
+      const intervalle = getEffectiveIntervalKmForCategory(
+        type,
+        {
+          marque: moto.marque,
+          modele: moto.modele,
+          annee: moto.annee,
+          cylindreeCm3: moto.cylindreeCm3 ?? null,
+        },
+        dernier.intervalleKm
+      );
       const nextDueKm = dernier.kilometrage + intervalle;
       const jours =
         dernier.intervalleJours ?? DEFAULT_REVISION_INTERVALLE_JOURS;
