@@ -8,6 +8,7 @@ import {
   resolveIntervalleJoursForCategory,
 } from "@/lib/auto-revision-intervals";
 import {
+  entretienMatchesCategory,
   getMaintenanceCategoryForType,
   isAutoPrecomputedMaintenanceCategory,
 } from "@/lib/maintenance-entretien-category";
@@ -85,15 +86,21 @@ export async function POST(req: Request) {
     nextDueMileage = moto.kilometrage + intervalleKmResolved;
   }
 
-  const existingPlanned = await prisma.entretien.findFirst({
+  const categoryForMatch = getMaintenanceCategoryForType(type);
+  const plannedCandidates = await prisma.entretien.findMany({
     where: {
       motoId,
-      type,
       statut: { in: ["A_VENIR", "proche", "en_retard"] },
       moto: { userId: session.user.id, deletedAt: null },
       deletedAt: null,
     },
   });
+  const existingPlanned =
+    plannedCandidates.find((e) =>
+      categoryForMatch != null
+        ? entretienMatchesCategory(e.type, categoryForMatch)
+        : e.type === type
+    ) ?? null;
 
   if (existingPlanned) {
     const entretien = await prisma.entretien.update({

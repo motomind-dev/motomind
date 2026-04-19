@@ -26,11 +26,13 @@ export default function ProchainsEntretiensCard({
       if (item.entretienId) {
         res = await fetch(`/api/entretiens/${item.entretienId}/complete`, {
           method: "PUT",
+          credentials: "include",
         });
       } else {
         res = await fetch("/api/entretiens/complete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ motoId: item.motoId, type: item.type }),
         });
       }
@@ -57,7 +59,10 @@ export default function ProchainsEntretiensCard({
         </p>
       )}
       {items.length === 0 ? (
-        <p className="text-zinc-500 text-sm">Aucun entretien à venir</p>
+        <p className="text-zinc-500 text-sm">
+          Aucune échéance proche pour l’instant (bientôt ou en retard). Tu seras alerté quand tu
+          t’approcheras du kilométrage ou de la date prévue.
+        </p>
       ) : (
         <ul className="space-y-4">
           {items.map((item) => {
@@ -79,6 +84,11 @@ export default function ProchainsEntretiensCard({
                   : item.nextDueDate
                     ? new Date(item.nextDueDate).toLocaleDateString("fr-FR")
                     : "—";
+
+            const kmAvantEcheanceCompteur =
+              item.nextDueMileage != null
+                ? Math.round(item.nextDueMileage - item.currentMileage)
+                : null;
 
             return (
               <li
@@ -107,6 +117,16 @@ export default function ProchainsEntretiensCard({
                         <> · Dans {item.daysRemaining} jours</>
                       )}
                     </p>
+                    {showYamahaInterval && item.nextDueMileage != null && kmAvantEcheanceCompteur != null && (
+                      <p className="text-zinc-600 text-[11px] mt-1 leading-snug max-w-md">
+                        Prochaine échéance au compteur : {item.nextDueMileage.toLocaleString("fr-FR")} km (dernier passage +{" "}
+                        {intervalConstructeur?.toLocaleString("fr-FR")} km). Km restants :{" "}
+                        {kmAvantEcheanceCompteur > 0
+                          ? `${kmAvantEcheanceCompteur.toLocaleString("fr-FR")} km`
+                          : `${kmAvantEcheanceCompteur.toLocaleString("fr-FR")} km`}{" "}
+                        = échéance − km actuels.
+                      </p>
+                    )}
                     <span
                       className={`inline-block mt-1 text-xs px-1.5 py-0.5 rounded ${getStatusColor(item.status)}`}
                     >

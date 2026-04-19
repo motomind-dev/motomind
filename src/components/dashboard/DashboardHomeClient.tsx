@@ -12,6 +12,7 @@ import PremiumBanner from "@/components/PremiumBanner";
 import ProchainsEntretiensCard from "@/components/ProchainsEntretiensCard";
 import WelcomeCard from "@/components/onboarding/WelcomeCard";
 import {
+  filterUpcomingItems,
   plannedEntretiensToStatusItems,
   type MaintenanceStatusItem,
 } from "@/lib/maintenance-status";
@@ -73,36 +74,38 @@ export default function DashboardHomeClient() {
     swrOptions
   );
 
+  /** Uniquement SOON / OVERDUE : pas les échéances lointaines (« À venir »), pour que la carte se vide après « effectué » tant que la prochaine échéance est loin. */
   const maintenanceStatusItems = useMemo(() => {
     if (!data) return [];
-    if (data.prochainsMaintenanceItems) {
-      return data.prochainsMaintenanceItems.map((row) => ({
-        motoId: row.motoId,
-        motoName: row.motoName,
-        type: row.type,
-        typeLabel: row.typeLabel,
-        status: row.status,
-        nextDueMileage: row.nextDueMileage,
-        nextDueDate: row.nextDueDate ? new Date(row.nextDueDate) : null,
-        currentMileage: row.currentMileage,
-        kmRemaining: row.kmRemaining,
-        daysRemaining: row.daysRemaining,
-        entretienId: row.entretienId ?? undefined,
-        constructorIntervalKm: row.constructorIntervalKm ?? null,
-      }));
-    }
-    return plannedEntretiensToStatusItems(
-      data.plannedEntretiens.map((e) => ({
-        id: e.id,
-        motoId: e.motoId,
-        type: e.type,
-        nextDueDate: e.nextDueDate ? new Date(e.nextDueDate) : null,
-        nextDueMileage: e.nextDueMileage,
-        reminderMileageBefore: e.reminderMileageBefore,
-        reminderDaysBefore: e.reminderDaysBefore,
-        moto: e.moto,
-      }))
-    );
+    const raw =
+      data.prochainsMaintenanceItems != null
+        ? data.prochainsMaintenanceItems.map((row) => ({
+            motoId: row.motoId,
+            motoName: row.motoName,
+            type: row.type,
+            typeLabel: row.typeLabel,
+            status: row.status,
+            nextDueMileage: row.nextDueMileage,
+            nextDueDate: row.nextDueDate ? new Date(row.nextDueDate) : null,
+            currentMileage: row.currentMileage,
+            kmRemaining: row.kmRemaining,
+            daysRemaining: row.daysRemaining,
+            entretienId: row.entretienId ?? undefined,
+            constructorIntervalKm: row.constructorIntervalKm ?? null,
+          }))
+        : plannedEntretiensToStatusItems(
+            data.plannedEntretiens.map((e) => ({
+              id: e.id,
+              motoId: e.motoId,
+              type: e.type,
+              nextDueDate: e.nextDueDate ? new Date(e.nextDueDate) : null,
+              nextDueMileage: e.nextDueMileage,
+              reminderMileageBefore: e.reminderMileageBefore,
+              reminderDaysBefore: e.reminderDaysBefore,
+              moto: e.moto,
+            }))
+          );
+    return filterUpcomingItems(raw);
   }, [data]);
 
   if (error) {
@@ -153,7 +156,7 @@ export default function DashboardHomeClient() {
           <div className="space-y-4 flex flex-col min-h-0">
             <CardHeader
               title="Prochains entretiens"
-              subtitle="Tes maintenances à prévoir"
+              subtitle="Bientôt ou en retard (pas les échéances lointaines)"
               action={
                 <Button href="/entretiens/ajouter" variant="primary" size="sm">
                   Ajouter un entretien
