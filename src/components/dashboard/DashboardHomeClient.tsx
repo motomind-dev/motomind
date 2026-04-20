@@ -160,6 +160,15 @@ export default function DashboardHomeClient() {
                 </Button>
               }
             />
+            {data.plan === "PRO" && (
+              <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed border-l border-zinc-700 pl-3">
+                Les échéances révision calculées automatiquement (badge Auto) sont
+                disponibles pour les Yamaha prises en charge par le carnet
+                constructeur pour l&apos;instant. D&apos;autres marques suivront
+                progressivement. Tu peux toujours planifier tes révisions
+                manuellement pour toutes tes motos.
+              </p>
+            )}
             <div className="max-h-[300px] overflow-y-auto -mx-1 px-1">
               <ProchainsEntretiensCard items={maintenanceStatusItems} />
             </div>
