@@ -161,12 +161,10 @@ export default function DashboardHomeClient() {
               }
             />
             {data.plan === "PRO" && (
-              <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed border-l border-zinc-700 pl-3">
-                Les échéances révision calculées automatiquement (badge Auto) sont
-                disponibles pour les Yamaha prises en charge par le carnet
-                constructeur pour l&apos;instant. D&apos;autres marques suivront
-                progressivement. Tu peux toujours planifier tes révisions
-                manuellement pour toutes tes motos.
+              <p className="text-[11px] sm:text-xs text-zinc-600 leading-snug -mt-1">
+                Révision auto (badge Auto) : Yamaha reconnues par le carnet pour
+                l&apos;instant — autres marques prévues. Planifie toujours à la main
+                pour n&apos;importe quelle moto.
               </p>
             )}
             <div className="max-h-[300px] overflow-y-auto -mx-1 px-1">
