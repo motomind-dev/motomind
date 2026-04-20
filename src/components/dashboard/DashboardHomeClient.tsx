@@ -162,9 +162,9 @@ export default function DashboardHomeClient() {
             />
             {data.plan === "PRO" && (
               <p className="text-[11px] sm:text-xs text-zinc-600 leading-snug -mt-1">
-                Révision auto (badge Auto) : Yamaha reconnues par le carnet pour
-                l&apos;instant — autres marques prévues. Planifie toujours à la main
-                pour n&apos;importe quelle moto.
+                Badge Auto : préconisation révision auto pour les Yamaha reconnues
+                dans l&apos;app. D&apos;autres constructeurs arriveront ensuite — en
+                attendant, la planification manuelle couvre toutes les motos.
               </p>
             )}
             <div className="max-h-[300px] overflow-y-auto -mx-1 px-1">
