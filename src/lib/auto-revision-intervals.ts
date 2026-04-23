@@ -8,7 +8,7 @@ export type MotoIntervalContext = {
   cylindreeCm3: number | null;
 };
 
-/** Rappel annuel type carnet constructeur (uniquement si une source de préconisation km existe). */
+/** Rappel annuel type carnet constructeur (uniquement si une source Yamaha / BMW / Kawasaki existe). */
 export const DEFAULT_REVISION_INTERVALLE_JOURS = 365;
 
 export function hasRevisionPreconizationKmSource(moto: MotoIntervalContext): boolean {
@@ -29,7 +29,7 @@ export const FIRST_UNIVERSAL_REVISION_KM = 1000;
 
 /**
  * Préconisation « auto » affichée / rappel mail : **toute** la grille km seulement si une
- * source constructeur est reconnue (ex: Yamaha, BMW).
+ * source constructeur est reconnue (ex: Yamaha, BMW, Kawasaki listée).
  * Sinon (autres marques) : **uniquement** l’échéance des 1 000 km ; pas d’auto 10k / 20k / …
  */
 export function shouldShowAutoRevisionPreconization(
@@ -65,7 +65,7 @@ export function nextRevisionDueMileage(
 
 /**
  * Jours entre deux passages : priorité à la valeur enregistrée sur l’entretien.
- * Pour `revision_generale`, 365 j seulement si une grille Yamaha s’applique au km.
+ * Pour `revision_generale`, 365 j seulement si une grille constructeur s’applique au km.
  */
 export function resolveIntervalleJoursForCategory(
   category: string,
@@ -89,9 +89,9 @@ export function resolveIntervalleJoursForCategory(
 
 /**
  * Intervalle km effectif pour la préconisation.
- * `revision_generale` : si une grille Yamaha s’applique, on utilise **toujours** l’intervalle constructeur
+ * `revision_generale` : si une grille constructeur s’applique, on utilise **toujours** l’intervalle constructeur
  * (`rule.intervalKm`), pas `intervalleKm` sur la fiche terminée — une ancienne valeur (ex. 11 000) ne doit pas
- * écraser 10 000 km. Sans grille Yamaha : pas de préconisation auto pour cette catégorie.
+ * écraser 10 000 km. Sans grille reconnue : pas de préconisation auto pour cette catégorie.
  * Autres catégories : intervalle enregistré puis défauts / env.
  */
 export function getEffectiveIntervalKmForCategory(
@@ -114,7 +114,7 @@ export function getEffectiveIntervalKmForCategory(
 
 /**
  * Intervalles km optionnels via env (JSON), fusionnés avec `INTERVALLES_KM` pour les types hors révision.
- * Ne pas inclure `revision_generale` : la clé est ignorée à la lecture (révision = grilles Yamaha uniquement).
+ * Ne pas inclure `revision_generale` : la clé est ignorée à la lecture (révision = grilles constructeur).
  * Exemple :
  * AUTO_REVISION_INTERVALLES_KM={"vidange":5000,"chaine":3000,"pneus":10000,"freins":10000}
  */

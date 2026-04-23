@@ -2,7 +2,10 @@
  * Intervalles km des grilles « forfait révision » constructeur.
  * Yamaha : règles de la grille existante.
  * BMW Motorrad : intervalle révision 10 000 km (millésimes 1990 à 2026).
+ * Kawasaki : modèles / millésimes listés dans `kawasaki-revision-intervals.ts`.
  */
+
+import { getKawasakiRevisionIntervalRuleForMoto } from "./kawasaki-revision-intervals";
 
 export type RevisionIntervalRule = {
   intervalKm: number;
@@ -63,6 +66,13 @@ export function getRevisionIntervalRuleForMoto(input: {
   if (isBmw && input.annee >= 1990 && input.annee <= 2026) {
     return { intervalKm: BMW_INTERVAL_STANDARD };
   }
+
+  const kawasakiRule = getKawasakiRevisionIntervalRuleForMoto({
+    marque: input.marque,
+    modele: input.modele,
+    annee: input.annee,
+  });
+  if (kawasakiRule) return kawasakiRule;
 
   if (isYamaha && input.cylindreeCm3 != null && input.cylindreeCm3 > 0) {
     return intervalFromDisplacement(input.cylindreeCm3);

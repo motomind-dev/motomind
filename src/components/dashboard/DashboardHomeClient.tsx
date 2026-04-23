@@ -164,7 +164,8 @@ export default function DashboardHomeClient() {
             {data.plan === "PRO" && (
               <p className="text-[11px] sm:text-xs text-zinc-600 leading-snug -mt-1">
                 Badge Auto : préconisation révision auto disponible pour les
-                Yamaha et BMW reconnues dans l&apos;app.
+                Yamaha, BMW et certains modèles Kawasaki reconnus dans
+                l&apos;app.
                 {data.hasBmwMotorcycle && (
                   <>
                     {" "}
