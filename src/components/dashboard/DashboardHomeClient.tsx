@@ -44,6 +44,7 @@ type HomePayload = {
     moto: { marque: string; modele: string; kilometrage: number };
   }>;
   plan: "FREE" | "PRO";
+  hasBmwMotorcycle?: boolean;
   /** Présent si préconisations auto Premium activées (fusion planifié + calculé). */
   prochainsMaintenanceItems?: Array<{
     motoId: string;
@@ -162,9 +163,15 @@ export default function DashboardHomeClient() {
             />
             {data.plan === "PRO" && (
               <p className="text-[11px] sm:text-xs text-zinc-600 leading-snug -mt-1">
-                Badge Auto : préconisation révision auto pour les Yamaha reconnues
-                dans l&apos;app. D&apos;autres constructeurs arriveront ensuite — en
-                attendant, la planification manuelle couvre toutes les motos.
+                Badge Auto : préconisation révision auto disponible pour les
+                Yamaha et BMW reconnues dans l&apos;app.
+                {data.hasBmwMotorcycle && (
+                  <>
+                    {" "}
+                    La plupart des modeles BMW Motorrad suivent une inspetion
+                    tout les 20000km.
+                  </>
+                )}
               </p>
             )}
             <div className="max-h-[300px] overflow-y-auto -mx-1 px-1">

@@ -63,7 +63,7 @@ export async function GET() {
 
   const userId = session.user.id;
 
-  const [motorcyclesCount, recentMaintenance, plannedEntretiens, userPlan] =
+  const [motorcyclesCount, recentMaintenance, plannedEntretiens, userPlan, motoBrands] =
     await Promise.all([
       prisma.moto.count({ where: { userId, deletedAt: null } }),
       prisma.entretien.findMany({
@@ -86,6 +86,10 @@ export async function GET() {
       prisma.user.findUnique({
         where: { id: userId },
         select: { plan: true },
+      }),
+      prisma.moto.findMany({
+        where: { userId, deletedAt: null },
+        select: { marque: true },
       }),
     ]);
 
@@ -148,12 +152,19 @@ export async function GET() {
     }
   }
 
+  const hasBmwMotorcycle = motoBrands.some((m) =>
+    String(m.marque ?? "")
+      .toLowerCase()
+      .includes("bmw")
+  );
+
   return NextResponse.json({
     userName: session.user.name ?? null,
     motorcycleCount: motorcyclesCount,
     recentMaintenance,
     plannedEntretiens,
     plan: planLabel,
+    hasBmwMotorcycle,
     ...(prochainsMaintenanceItems !== undefined && {
       prochainsMaintenanceItems,
     }),

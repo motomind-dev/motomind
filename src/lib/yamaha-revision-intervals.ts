@@ -1,7 +1,7 @@
 /**
- * Intervalles km des grilles « forfait révision » Yamaha (données constructeur fournies).
- * Si la moto n’est pas couverte (autre marque, Yamaha sans modèle/cylindrée reconnus) : null
- * — aucune préconisation km inventée.
+ * Intervalles km des grilles « forfait révision » constructeur.
+ * Yamaha : règles de la grille existante.
+ * BMW Motorrad : intervalle révision 10 000 km (millésimes 1990 à 2026).
  */
 
 export type RevisionIntervalRule = {
@@ -10,6 +10,7 @@ export type RevisionIntervalRule = {
 
 const INTERVAL_125 = 6000;
 const INTERVAL_STANDARD = 10000;
+const BMW_INTERVAL_STANDARD = 10000;
 
 /** Paires [regex sur modèle normalisé, intervalle km] — ordre = première correspondance gagne. */
 const YAMAHA_MODEL_RULES: Array<{ test: RegExp; intervalKm: number }> = [
@@ -57,6 +58,11 @@ export function getRevisionIntervalRuleForMoto(input: {
   const m = normalize(input.marque);
   const model = normalize(input.modele);
   const isYamaha = m.includes("yamaha");
+  const isBmw = m.includes("bmw");
+
+  if (isBmw && input.annee >= 1990 && input.annee <= 2026) {
+    return { intervalKm: BMW_INTERVAL_STANDARD };
+  }
 
   if (isYamaha && input.cylindreeCm3 != null && input.cylindreeCm3 > 0) {
     return intervalFromDisplacement(input.cylindreeCm3);

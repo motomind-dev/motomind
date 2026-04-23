@@ -8,7 +8,7 @@ export type MotoIntervalContext = {
   cylindreeCm3: number | null;
 };
 
-/** Rappel annuel type carnet Yamaha (uniquement si une source de préconisation km existe). */
+/** Rappel annuel type carnet constructeur (uniquement si une source de préconisation km existe). */
 export const DEFAULT_REVISION_INTERVALLE_JOURS = 365;
 
 export function hasRevisionPreconizationKmSource(moto: MotoIntervalContext): boolean {
@@ -16,7 +16,7 @@ export function hasRevisionPreconizationKmSource(moto: MotoIntervalContext): boo
 }
 
 /**
- * Prochain palier au compteur aligné sur la grille Yamaha (6k, 12k… ou 10k, 20k, 30k…).
+ * Prochain palier au compteur aligné sur la grille constructeur (6k, 12k… ou 10k, 20k, 30k…).
  * Ex. dernier passage 1 500 km → prochaine échéance **10 000 km** ; après passage à 10 000 km → **20 000 km**.
  */
 export function nextYamahaGridDueMileage(dernierKm: number, intervalKm: number): number {
@@ -28,7 +28,8 @@ export function nextYamahaGridDueMileage(dernierKm: number, intervalKm: number):
 export const FIRST_UNIVERSAL_REVISION_KM = 1000;
 
 /**
- * Préconisation « auto » affichée / rappel mail : **toute** la grille km seulement si Yamaha (carnet constructeur).
+ * Préconisation « auto » affichée / rappel mail : **toute** la grille km seulement si une
+ * source constructeur est reconnue (ex: Yamaha, BMW).
  * Sinon (autres marques) : **uniquement** l’échéance des 1 000 km ; pas d’auto 10k / 20k / …
  */
 export function shouldShowAutoRevisionPreconization(
