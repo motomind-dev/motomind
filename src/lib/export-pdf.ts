@@ -109,6 +109,12 @@ function drawFooters(doc: import("jspdf").jsPDF, pageWidth: number, pageHeight: 
   }
 }
 
+function formatKmForPdf(value: number): string {
+  // `fr-FR` utilise parfois des espaces insécables (U+00A0 / U+202F) mal rendues en PDF.
+  // On les remplace par des espaces simples pour un rendu stable.
+  return Number(value).toLocaleString("fr-FR").replace(/[\u00A0\u202F]/g, " ");
+}
+
 export async function exportMaintenanceToPdf(
   entretiens: EntretienForPdf[]
 ): Promise<void> {
@@ -168,7 +174,7 @@ export async function exportMaintenanceToPdf(
         doc.setFont("helvetica", "normal");
         doc.setTextColor(...BODY);
         const km = motoInfo.kilometrage ?? first?.kilometrage ?? 0;
-        doc.text(`Kilométrage actuel : ${Number(km).toLocaleString("fr-FR")} km`, MARGIN, y);
+        doc.text(`Kilométrage actuel : ${formatKmForPdf(Number(km))} km`, MARGIN, y);
         y += 9;
       }
 
@@ -204,7 +210,7 @@ export async function exportMaintenanceToPdf(
 
         doc.setTextColor(...BODY);
         doc.text(
-          `${new Date(e.date).toLocaleDateString("fr-FR")} · ${e.kilometrage.toLocaleString("fr-FR")} km`,
+          `${new Date(e.date).toLocaleDateString("fr-FR")} · ${formatKmForPdf(e.kilometrage)} km`,
           MARGIN,
           y
         );
